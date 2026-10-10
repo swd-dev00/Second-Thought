@@ -10,3 +10,13 @@
 *.log
 .DS_Store
 Thumbs.db
+
+# Local/generated workspace
+.grok/
+.vercel/
+.node_modules.lock
+*.tgz
+*.old
+
+# Generated experimental outputs
+artifacts/
