@@ -1,0 +1,7 @@
+﻿freeze_id=NMM-CANONICAL-V3-20261010
+project=Second Thought
+controller_version=v3
+git_repository_present_at_freeze=false
+git_commit_at_freeze=NONE
+provenance_basis=SHA256 file hashes + canonical comparison artifacts
+timestamp_utc=2026-10-10T06:43:46.3372422Z

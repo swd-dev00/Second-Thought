@@ -1,0 +1,49 @@
+﻿{
+    "freeze_id":  "NMM-CANONICAL-V3-20261010",
+    "created_utc":  "2026-10-10T06:38:24.0155396Z",
+    "project":  "Second Thought",
+    "architecture":  "Neuro-reactive Multimodal Metacognition",
+    "controller_version":  "v3",
+    "status":  "FROZEN",
+    "canonical_trials":  [
+                             "Door 2",
+                             "Run 440",
+                             "Berth 7"
+                         ],
+    "controller_files":  [
+                             {
+                                 "path":  "D:\\Nebius-Nvidia\\SecondThought\\live-core.mjs",
+                                 "sha256":  "F5C8556347E6491F4DF2293C921A6140F6DBBEA0CFB5C7A9C7E7612E58233980"
+                             },
+                             {
+                                 "path":  "D:\\Nebius-Nvidia\\SecondThought\\live-adaptive.mjs",
+                                 "sha256":  "6ADF36BAECBADA2365A8846764AFA09C256CDA2C4CED8ACDC608D7347D2379DF"
+                             },
+                             {
+                                 "path":  "D:\\Nebius-Nvidia\\SecondThought\\live-baseline.mjs",
+                                 "sha256":  "175CC4ECFAE96AD573F3A5376317608C677E6BCE5DD4BCA1776CE4A07A34D8D4"
+                             },
+                             {
+                                 "path":  "D:\\Nebius-Nvidia\\SecondThought\\compare-live.mjs",
+                                 "sha256":  "7AB86748351B500A64080BDDD36AE0F16930F94311B92DCEBBC0507E401C4BE3"
+                             },
+                             {
+                                 "path":  "D:\\Nebius-Nvidia\\SecondThought\\SecondThought.ps1",
+                                 "sha256":  "B6FDE0A47A0100F54634B164BB019E03DE3864947E64361B8F7054C95E21D6F7"
+                             }
+                         ],
+    "comparisons":  [
+                        {
+                            "path":  "D:\\Nebius-Nvidia\\SecondThought\\.secondthought\\canonical-v3-20261010\\berth-7-1791614136776-comparison.json",
+                            "sha256":  "52B00EBFE88759A13EF7DCB66118F4953CF15CB76AFB224A683E9570BCDA26FB"
+                        },
+                        {
+                            "path":  "D:\\Nebius-Nvidia\\SecondThought\\.secondthought\\canonical-v3-20261010\\door-2-1791614095731-comparison.json",
+                            "sha256":  "6C3500A3FFEBD1AEB7893FDCD37BC08988C4E7FBA5EDBB2FF442503CE99EF3FE"
+                        },
+                        {
+                            "path":  "D:\\Nebius-Nvidia\\SecondThought\\.secondthought\\canonical-v3-20261010\\yield-440-1791614106055-comparison.json",
+                            "sha256":  "C0EDA4214168886B7C0B002DBBF7D0F42BB493C0D822FA14AF8385B3DB252DE3"
+                        }
+                    ]
+}

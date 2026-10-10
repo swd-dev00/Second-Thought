@@ -1,0 +1,73 @@
+{
+  "schema": "second-thought-live-comparison/v1",
+  "trial": {
+    "id": "door-2",
+    "title": "Door 2",
+    "truth": "closed"
+  },
+  "createdAt": "2026-10-10T06:34:55.730Z",
+  "baseline": {
+    "runId": "ST-BASELINE-DOOR-2-20261010063449",
+    "result": {
+      "kind": "halt",
+      "tier": "ultra",
+      "verdict": "abstain",
+      "correct": false,
+      "falseCertainty": false,
+      "confidence": 0.5,
+      "answer": "We are given a trial about Door 2. The question: Is the badge reader on door 2 failing closed, or failing open? Hypotheses: closed (failing closed) and open (failing open).\n\nWe have three pieces of evidence:\n\n1. [denies] Access log (age 0d): Three valid badges denied in nine minutes. The strike never released.\n2. [latch] Latch sensor (age 0d): The door stayed latched. No unsolicited open.\n3. [camera] Camera 2 (age 0d): No tailgating and no door motion during the denies.\n\nWe need to use all supplied evidence to determine which hypothesis is best supported. If evidence cannot discriminate, we abstain and name the missing observation.\n\nLet's analyze:\n\n- \"Failing closed\" means the badge reader fails in a way that keeps the door locked (strike never releases) even when a valid badge is presented. That would result in denies for valid badges, and the door remains latched.\n- \"Failing open\" means the badge reader fails in a way that unlocks the door (strike releases) when it shouldn't, or perhaps the door opens without a valid badge. But the evidence says: three valid badges denied, strike never released. That suggests the reader is not releasing the strike for valid badges. That points to",
+      "nextObservation": null
+    },
+    "totals": {
+      "prompt_tokens": 338,
+      "completion_tokens": 900,
+      "total_tokens": 1238,
+      "latencyMs": 4042,
+      "estimatedCostUsd": 0.003038,
+      "calls": {
+        "lightning": 0,
+        "super": 0,
+        "ultra": 1,
+        "tavily": 0
+      }
+    }
+  },
+  "adaptive": {
+    "runId": "ST-ADAPTIVE-DOOR-2-20261010063453",
+    "result": {
+      "kind": "commit",
+      "tier": "lightning",
+      "ccg": 0.13200936917753525,
+      "verdict": "closed",
+      "correct": true,
+      "falseCertainty": false,
+      "confidence": 0.5,
+      "answer": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - **Trial:** Door 2\n   - **Question:** Is the badge reader on door 2 failing closed, or failing open?\n   - **Hypotheses:** \n     - `closed`: Failing closed\n     - `open`: Failing open\n   - **Evidence:**\n     1. `[denies]` Access log (age 0d): Three valid badges denied in nine minutes. The strike never released.\n     2. `[latch]` Latch sensor (age 0d): The door stayed latched. No unsolicited open.\n     3. `[camera]` Camera 2 (age 0d): No tailgating and no door motion during the denies.\n   - **Instruction:** Assess the evidence packet. Preserve uncertainty. Identify contradictions and the most useful missing observation if the hypotheses are not separable. Return ONLY valid JSON with specific schema.\n\n2.  **Understand the Concepts (Physical Security/Badge Reader Failure Modes):**\n   - **Failing closed:** The door stays locked/unlocked? Wait, need to recall standard definitions. In access control:\n     - \"Failing closed\" typically means the lock remains locked/de-energized when power/fail-safe fails. Or sometimes it means the reader always denies access (strike stays locked). Actually, in door hardware/fail-safe/fail-secure te",
+      "nextObservation": null,
+      "escalated": false,
+      "deescalated": false,
+      "acquired": false,
+      "challenged": false
+    },
+    "totals": {
+      "prompt_tokens": 340,
+      "completion_tokens": 450,
+      "total_tokens": 790,
+      "latencyMs": 1761,
+      "estimatedCostUsd": 0.000128,
+      "calls": {
+        "lightning": 1,
+        "super": 0,
+        "ultra": 0,
+        "tavily": 0
+      }
+    }
+  },
+  "delta": {
+    "tokens": -448,
+    "latencyMs": -2281,
+    "estimatedCostUsd": -0.00291,
+    "correct": 1,
+    "falseCertainty": 0
+  }
+}

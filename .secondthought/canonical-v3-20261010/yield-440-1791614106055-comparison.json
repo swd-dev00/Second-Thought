@@ -1,0 +1,73 @@
+{
+  "schema": "second-thought-live-comparison/v1",
+  "trial": {
+    "id": "yield-440",
+    "title": "Run 440",
+    "truth": "abstain"
+  },
+  "createdAt": "2026-10-10T06:35:06.055Z",
+  "baseline": {
+    "runId": "ST-BASELINE-YIELD-440-20261010063458",
+    "result": {
+      "kind": "halt",
+      "tier": "ultra",
+      "verdict": "abstain",
+      "correct": true,
+      "falseCertainty": false,
+      "confidence": 0.5,
+      "answer": "We are given a trial with two hypotheses: lot-a (Lot A impurity) and lot-b (Lot B solvent swap). We have three pieces of evidence:\n\n1. note-a: Lot A assayed above the impurity spec. Nothing shows the impurity reaches the yield step.\n2. note-b: Lot B solvent was swapped that morning. No paired run uses the previous solvent.\n3. hplc: HPLC trace shows an unassigned peak sits between the two candidate retention times.\n\nWe need to evaluate which hypothesis is better supported by the evidence. The question: \"Which change caused the yield drop in run 440 — lot A impurity, or the lot B solvent swap?\"\n\nWe must use all supplied evidence. If evidence cannot discriminate, we abstain and name the missing observation.\n\nLet's analyze each evidence:\n\n- note-a: Lot A impurity is above spec, but there's no evidence that this impurity reaches the yield step. So it suggests a potential cause but no direct link to yield drop. It supports lot-a weakly, but the note says \"Nothing shows the impurity reaches the yield step.\" That weakens support.\n\n- note-b: Lot B solvent was swapped that morning. No paired run uses the previous solvent. This indicates a change in solvent for Lot B, but we don't have a dire",
+      "nextObservation": null
+    },
+    "totals": {
+      "prompt_tokens": 361,
+      "completion_tokens": 900,
+      "total_tokens": 1261,
+      "latencyMs": 5447,
+      "estimatedCostUsd": 0.003061,
+      "calls": {
+        "lightning": 0,
+        "super": 0,
+        "ultra": 1,
+        "tavily": 0
+      }
+    }
+  },
+  "adaptive": {
+    "runId": "ST-ADAPTIVE-YIELD-440-20261010063504",
+    "result": {
+      "kind": "halt",
+      "tier": "lightning",
+      "ccg": 0.3746469037189972,
+      "verdict": "abstain",
+      "correct": true,
+      "falseCertainty": false,
+      "confidence": 0.5,
+      "answer": "Here, the user asks me to act as an inference engine inside a controlled epistemic calibration experiment. I need to output only valid JSON with specific schema. The task: assess evidence packet about a yield drop in run 440. Two hypotheses: lot-a (Lot A impurity) or lot-b (Lot B solvent swap). Evidence: three items. I need to evaluate which change caused the yield drop, preserve uncertainty, identify contradictions, and most useful missing observation if hypotheses not separable.\n\nI must not reveal chain-of-thought. Return ONLY valid JSON with the schema. The schema includes fields: conclusion_id (one supplied hypothesis id or \"abstain\"), conclusion (short answer), confidence (0.0), hypotheses (array of objects with id and support), evidence_for (list of evidence ids), evidence_against (list of evidence ids), unresolved (short unresolved issues), next_observation (single most useful missing observation or null), verification (pass|fail|unknown), reasoning_summary (brief evidence-level summary, no hidden reasoning).\n\nI need to parse the evidence.\n\nEvidence IDs: [note-a], [note-b], [hplc]. I'll refer to them as \"note-a\", \"note-b\", \"hplc\" maybe. But the schema expects evidence ids; I",
+      "nextObservation": null,
+      "escalated": false,
+      "deescalated": false,
+      "acquired": false,
+      "challenged": false
+    },
+    "totals": {
+      "prompt_tokens": 363,
+      "completion_tokens": 450,
+      "total_tokens": 813,
+      "latencyMs": 1796,
+      "estimatedCostUsd": 0.00013,
+      "calls": {
+        "lightning": 1,
+        "super": 0,
+        "ultra": 0,
+        "tavily": 0
+      }
+    }
+  },
+  "delta": {
+    "tokens": -448,
+    "latencyMs": -3651,
+    "estimatedCostUsd": -0.002931,
+    "correct": 0,
+    "falseCertainty": 0
+  }
+}

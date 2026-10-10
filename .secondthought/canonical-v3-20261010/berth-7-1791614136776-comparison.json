@@ -1,0 +1,73 @@
+{
+  "schema": "second-thought-live-comparison/v1",
+  "trial": {
+    "id": "berth-7",
+    "title": "Berth 7",
+    "truth": "exam"
+  },
+  "createdAt": "2026-10-10T06:35:36.776Z",
+  "baseline": {
+    "runId": "ST-BASELINE-BERTH-7-20261010063514",
+    "result": {
+      "kind": "commit",
+      "tier": "ultra",
+      "verdict": "labor",
+      "correct": false,
+      "falseCertainty": false,
+      "confidence": 0.5,
+      "answer": "{\"conclusion_id\":\"exam\",\"conclusion\":\"Targeted exam on HS 8507 explains the dwell-time increase. Berth 7 was assigned an extra exam lane for the current window (berth-order, 1d), HS 8507 is on the targeted-exam list for this window (hs-list, 1d), and customer complaints in the window cite holds without mentioning gangs or crane (holds, 2d).\",\"confidence\":0.85,\"hypotheses\":[{\"id\":\"exam\",\"support\":0.9},{\"id\":\"crane\",\"support\":0.2},{\"id\":\"labor\",\"support\":0.05}],\"evidence_for\":[\"berth-order\",\"hs-list\",\"holds\"],\"evidence_against\":[\"holds\",\"memo-down\"],\"unresolved\":[\"No direct confirmation that HS 8507 cargo is physically at Berth 7 during the window\"],\"next_observation\":\"Cargo manifest showing HS 8507 containers",
+      "nextObservation": null
+    },
+    "totals": {
+      "prompt_tokens": 492,
+      "completion_tokens": 900,
+      "total_tokens": 1392,
+      "latencyMs": 4624,
+      "estimatedCostUsd": 0.003192,
+      "calls": {
+        "lightning": 0,
+        "super": 0,
+        "ultra": 1,
+        "tavily": 1
+      }
+    }
+  },
+  "adaptive": {
+    "runId": "ST-ADAPTIVE-BERTH-7-20261010063519",
+    "result": {
+      "kind": "commit",
+      "tier": "ultra",
+      "ccg": 0.37595500234948814,
+      "verdict": "exam",
+      "correct": true,
+      "falseCertainty": false,
+      "confidence": 0.78,
+      "answer": "Targeted exams on HS 8507 cargo at Berth 7 explain the dwell-time increase.",
+      "nextObservation": "HS 8507 volume and exam count at Berth 7 over the 11-day window",
+      "escalated": true,
+      "deescalated": true,
+      "acquired": true,
+      "challenged": false
+    },
+    "totals": {
+      "prompt_tokens": 2421,
+      "completion_tokens": 2696,
+      "total_tokens": 5117,
+      "latencyMs": 17047,
+      "estimatedCostUsd": 0.003727,
+      "calls": {
+        "lightning": 3,
+        "super": 1,
+        "ultra": 1,
+        "tavily": 1
+      }
+    }
+  },
+  "delta": {
+    "tokens": 3725,
+    "latencyMs": 12423,
+    "estimatedCostUsd": 0.000535,
+    "correct": 1,
+    "falseCertainty": 0
+  }
+}
