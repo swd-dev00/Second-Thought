@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import { CANONICAL } from "@/lib/nmm/trials";
 import { runTrial } from "@/lib/nmm/engine";
+import { substrateStatus } from "@/lib/nmm/probe";
 import { WEIGHTS } from "@/lib/nmm/signals";
 import { TIERS } from "@/lib/nmm/models";
 import { ccg, money, pct, tokens } from "@/lib/nmm/format";
@@ -22,14 +23,25 @@ function latestRead(events: TraceEvent[]) {
   return [...events].reverse().find((event) => event.type === "read");
 }
 
+function policyOf(trialId: string): string {
+  if (trialId === "berth-7") return "Escalate through the model family when deeper reasoning and new evidence can materially change the answer.";
+  if (trialId === "yield-440") return "Stop when the evidence cannot discriminate and more inference cannot resolve the uncertainty.";
+  return "Stay on Lightning when the evidence is already sufficient to commit.";
+}
+
 export function Bench() {
   const [trialId, setTrialId] = useState(CANONICAL[0]!.id);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
   const [playing, setPlaying] = useState(true);
   const [playhead, setPlayhead] = useState(0);
+  const [runtime, setRuntime] = useState<{ tokenFactory: boolean; tavily: boolean } | null>(null);
   const run = useMemo(() => runTrial(CANONICAL.find((trial) => trial.id === trialId) ?? CANONICAL[0]!), [trialId]);
   const end = endOf(run);
   const done = playhead >= end - 1;
+
+  useEffect(() => {
+    substrateStatus().then(setRuntime).catch(() => setRuntime({ tokenFactory: false, tavily: false }));
+  }, []);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("trial");
@@ -81,12 +93,42 @@ export function Bench() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-3xl">
-        <p className="text-xs tracking-widest text-amber uppercase">Cognitive runtime</p>
-        <h1 className="mt-2 font-display text-3xl leading-tight text-fg sm:text-4xl">
-          Same task. Same packet. One side spends Ultra. The other decides how much cognition the problem actually needs.
-        </h1>
-      </div>
+      <section className="border-b border-line pb-6">
+        <div className="max-w-4xl">
+          <p className="text-xs tracking-[0.24em] text-amber uppercase">Second Thought · Powered by NMM</p>
+          <h1 className="mt-3 font-display text-4xl leading-[0.98] text-fg sm:text-6xl">
+            Second Thought is a cognitive runtime.
+          </h1>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted sm:text-base">
+            NMM watches observable evidence and inference conditions. CCG measures when the current reasoning state is poorly calibrated to the problem. MRL decides whether to continue, challenge, acquire evidence, change model tier, commit, or stop.
+          </p>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="h-12 bg-amber px-5 text-sm font-medium text-ink"
+            onClick={() => { setTrialId("berth-7"); setPlayhead(0); setPlaying(true); }}
+          >
+            Run Berth 7
+          </button>
+          <span className="text-xs text-muted">Same model family. Different cognitive allocation. Determined at runtime.</span>
+        </div>
+        <RuntimeStrip status={runtime} />
+        <section className="mt-3 grid gap-px border border-line bg-line sm:grid-cols-3">
+          <div className="bg-ink px-3 py-3">
+            <p className="text-[11px] tracking-widest text-muted uppercase">Berth 7</p>
+            <p className="mt-1 text-sm text-fg">Escalates through the model family.</p>
+          </div>
+          <div className="bg-ink px-3 py-3">
+            <p className="text-[11px] tracking-widest text-muted uppercase">Run 440</p>
+            <p className="mt-1 text-sm text-fg">Stops when evidence cannot discriminate.</p>
+          </div>
+          <div className="bg-ink px-3 py-3">
+            <p className="text-[11px] tracking-widest text-muted uppercase">Door 2</p>
+            <p className="mt-1 text-sm text-fg">Stays on Lightning when the evidence is sufficient.</p>
+          </div>
+        </section>
+      </section>
 
       <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
         {CANONICAL.map((trial) => (
@@ -107,8 +149,13 @@ export function Bench() {
         <div className="flex min-w-0 flex-col gap-4">
           <section className="border border-line bg-panel p-4">
             <p className="text-xs tracking-widest text-muted uppercase">{run.trial.kicker}</p>
-            <h2 className="mt-2 font-display text-2xl text-fg">{run.trial.question}</h2>
+            <h2 className="mt-2 font-display text-2xl text-fg">{run.trial.title}</h2>
+            <p className="mt-2 font-display text-xl text-fg">{run.trial.question}</p>
             <p className="mt-2 text-sm leading-relaxed text-muted">{run.trial.brief}</p>
+            <div className="mt-4 border-l-2 border-amber pl-3">
+              <p className="text-[11px] tracking-widest text-muted uppercase">NMM allocation policy</p>
+              <p className="mt-1 text-sm text-fg">{policyOf(run.trial.id)}</p>
+            </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {initial.map((item) => (
                 <article key={item.id} className="border border-line bg-ink px-3 py-2">
@@ -126,6 +173,10 @@ export function Bench() {
               <p className="mt-3 text-xs text-muted">Nothing outside this packet can separate the hypotheses.</p>
             )}
           </section>
+
+          <div className="h-1 overflow-hidden bg-panel">
+            <div className="h-full bg-amber transition-[width] duration-150" style={{ width: `${Math.min(100, (playhead / end) * 100)}%` }} />
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className="h-11 bg-amber px-4 text-sm text-ink" onClick={() => { setPlayhead(0); setPlaying(true); }}>
@@ -155,6 +206,8 @@ export function Bench() {
             <p className="ml-auto text-xs text-muted tabular-nums">{done ? "Trace complete" : "Running"}</p>
           </div>
 
+          <InterventionRail events={regEvents} />
+
           <div className="grid gap-3 lg:grid-cols-2">
             <Pane
               tone="baseline"
@@ -174,12 +227,169 @@ export function Bench() {
             />
           </div>
 
+          {done ? <OutcomeSplit run={run} /> : null}
+          {done ? <CaseMechanism run={run} /> : null}
+
           <Instrument read={read && read.type === "read" ? read : null} history={reads.flatMap((event) => (event.type === "read" ? [event.ccg] : []))} />
 
           {done ? <Verdict run={run} /> : null}
         </div>
       </div>
     </div>
+  );
+}
+
+function RuntimeStrip({ status }: { status: { tokenFactory: boolean; tavily: boolean } | null }) {
+  const cells = [
+    { label: "NMM controller", value: "ACTIVE", active: true },
+    { label: "Nebius Token Factory", value: status === null ? "CHECKING" : status.tokenFactory ? "ARMED" : "KEY NEEDED", active: Boolean(status?.tokenFactory) },
+    { label: "Tavily acquisition", value: status === null ? "CHECKING" : status.tavily ? "ARMED" : "KEY NEEDED", active: Boolean(status?.tavily) },
+  ];
+
+  return (
+    <div className="mt-5 grid gap-px border border-line bg-line sm:grid-cols-3">
+      {cells.map((cell) => (
+        <div key={cell.label} className="flex items-center justify-between gap-3 bg-ink px-3 py-2">
+          <span className="text-[11px] text-muted">{cell.label}</span>
+          <span className={clsx("text-[11px] tracking-wider", cell.active ? "text-amber" : "text-muted")}>{cell.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type CaseMechanismCopy = { title: string; lead: string; items: Array<readonly [string, string]> };
+type InterventionStep = { key: string; label: string; detail: string; tone: "read" | "action" | "terminal" };
+
+function CaseMechanism({ run }: { run: TrialRun }) {
+  const copy: CaseMechanismCopy =
+    run.trial.id === "berth-7"
+      ? {
+          title: "Why Second Thought changed course",
+          lead: "The first answer was plausible, but the evidence did not support committing to it.",
+          items: [
+            ["Challenge", "The labor story depended on a stale, high-salience bulletin that conflicted with current gate activity."],
+            ["Acquire", "The packet could not separate crane failure from a customs hold, so NMM requested the missing observations."],
+            ["Allocate", "The surviving hypotheses still competed, so cognition moved up the Nemotron stack only as needed."],
+            ["Commit", "The combined commodity and berth evidence separated the targeted exam hypothesis."],
+          ],
+        }
+      : run.trial.id === "yield-440"
+        ? {
+            title: "Why Second Thought refused to guess",
+            lead: "The available observations support both causes. More reasoning cannot manufacture the missing experiment.",
+            items: [
+              ["Detect", "The competing hypotheses remain symmetric under the available evidence."],
+              ["Stop", "NMM recognizes that another model pass cannot resolve an information deficit."],
+              ["Name the gap", "The system identifies the discriminating control needed before a causal answer is warranted."],
+              ["Halt", "Abstention is the correct outcome because the evidence is underdetermined."],
+            ],
+          }
+        : {
+            title: "Why Second Thought stayed small",
+            lead: "The evidence is fresh, aligned, and decisive. There is no reason to pay for deeper cognition.",
+            items: [
+              ["Read", "Three independent observations point in the same direction."],
+              ["Measure", "Contradiction and competition remain low while coverage is sufficient."],
+              ["Allocate", "Lightning is enough for the evidence state in front of the system."],
+              ["Commit", "NMM reaches the supported answer without escalating to Super or Ultra."],
+            ],
+          };
+
+  return (
+    <section className="border border-line bg-panel p-4">
+      <p className="text-xs tracking-widest text-amber uppercase">Intervention logic</p>
+      <h2 className="mt-2 font-display text-2xl text-fg">{copy.title}</h2>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">{copy.lead}</p>
+      <div className="mt-4 grid gap-px border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
+        {copy.items.map(([label, detail]) => (
+          <article key={label} className="bg-ink p-3">
+            <p className="text-xs tracking-wider text-amber uppercase">{label}</p>
+            <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function InterventionRail({ events }: { events: TraceEvent[] }) {
+  const steps: InterventionStep[] = events.flatMap((event): InterventionStep[] => {
+    if (event.type === "read") {
+      return [{ key: `read-${event.t}`, label: TIERS[event.tier].short, detail: `CCG ${ccg(event.ccg)}`, tone: "read" as const }];
+    }
+    if (event.type === "action") {
+      const label =
+        event.action === "challenge"
+          ? "CHALLENGE"
+          : event.action === "acquire"
+            ? "ACQUIRE"
+            : event.action === "escalate"
+              ? `ESCALATE → ${TIERS[event.tier].short}`
+              : "DE-ESCALATE";
+      return [{ key: `${event.action}-${event.t}`, label, detail: event.title, tone: "action" as const }];
+    }
+    if (event.type === "halt") {
+      return [{ key: `halt-${event.t}`, label: "HALT", detail: "Evidence cannot discriminate", tone: "terminal" as const }];
+    }
+    if (event.type === "commit") {
+      return [{ key: `commit-${event.t}`, label: "COMMIT", detail: event.label, tone: "terminal" as const }];
+    }
+    return [];
+  });
+
+  return (
+    <section className="border border-line bg-ink p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs tracking-widest text-muted uppercase">Cognitive flight recorder</p>
+        <p className="text-xs text-muted">{steps.length ? "NMM intervention path" : "Awaiting first read"}</p>
+      </div>
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        {steps.length === 0 ? <span className="text-sm text-muted">LIGHTNING will read the incident first.</span> : null}
+        {steps.map((step, index) => (
+          <div key={step.key} className="flex shrink-0 items-center gap-2">
+            {index > 0 ? <span className="text-muted">→</span> : null}
+            <div className={clsx("min-w-28 border px-3 py-2", step.tone === "action" ? "border-amber bg-panel-2" : step.tone === "terminal" ? "border-oxide bg-panel" : "border-line bg-panel")}>
+              <p className={clsx("text-xs tracking-wider uppercase", step.tone === "action" ? "text-amber" : step.tone === "terminal" ? "text-oxide" : "text-fg")}>{step.label}</p>
+              <p className="mt-1 text-[11px] text-muted">{step.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function OutcomeSplit({ run }: { run: TrialRun }) {
+  const baselineLabel = run.baseline.outcome === "abstained" ? "ABSTAINED" : run.baseline.correct ? "CORRECT" : "WRONG";
+  const regulatedLabel = run.regulated.outcome === "abstained" ? "CORRECT HALT" : run.regulated.correct ? "CORRECT" : "WRONG";
+
+  return (
+    <section className="grid overflow-hidden border border-line lg:grid-cols-2">
+      <article className="bg-panel p-5 lg:border-r lg:border-line">
+        <p className="text-xs tracking-[0.2em] text-muted uppercase">Ultra only</p>
+        <p className="mt-3 font-display text-4xl text-fg sm:text-5xl">{run.baseline.answerLabel}</p>
+        <p className={clsx("mt-2 text-sm font-medium tracking-widest", run.baseline.correct ? "text-amber" : "text-oxide")}>{baselineLabel}</p>
+        <p className="mt-4 text-xs leading-relaxed text-muted">
+          One large model, one reasoning path, no retrieval decision, no epistemic stop.
+        </p>
+      </article>
+      <article className="bg-ink p-5">
+        <p className="text-xs tracking-[0.2em] text-amber uppercase">Second Thought</p>
+        <p className="mt-3 font-display text-4xl text-fg sm:text-5xl">{run.regulated.answerLabel}</p>
+        <p className={clsx("mt-2 text-sm font-medium tracking-widest", run.regulated.correct ? "text-amber" : "text-oxide")}>{regulatedLabel}</p>
+        <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <p className="text-muted">MRL interventions</p>
+            <p className="mt-1 text-fg tabular-nums">{run.regulated.interventions}</p>
+          </div>
+          <div>
+            <p className="text-muted">Final CCG</p>
+            <p className="mt-1 text-fg tabular-nums">{ccg(run.regulated.finalCcg)}</p>
+          </div>
+        </div>
+      </article>
+    </section>
   );
 }
 
