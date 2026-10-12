@@ -50,4 +50,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(8181, '127.0.0.1', () => console.log('Second Thought prebuilt: http://127.0.0.1:8181/'));
+server.listen(8080, '127.0.0.1', () => console.log('Second Thought prebuilt: http://127.0.0.1:8080/'));

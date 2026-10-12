@@ -21,6 +21,7 @@
  */
 import { spawn } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
+import { createRequire } from "node:module";
 import { constants as osConstants } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -111,7 +112,22 @@ function main(argv) {
     process.exit(2);
   }
   const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
-  const child = spawn(command, args, { stdio: "inherit", env });
+  let executable = command;
+  let commandArgs = args;
+  if (command === "vite") {
+    // Windows provides vite.cmd, which spawn() cannot execute directly.
+    // Run the installed JavaScript CLI with Node on every platform instead.
+    let vitePackage;
+    try {
+      vitePackage = createRequire(import.meta.url).resolve("vite/package.json");
+    } catch {
+      console.error("[with-app-env] Vite is not installed. Run npm ci in the project directory.");
+      process.exit(127);
+    }
+    executable = process.execPath;
+    commandArgs = [join(dirname(vitePackage), "bin/vite.js"), ...args];
+  }
+  const child = spawn(executable, commandArgs, { stdio: "inherit", env });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => child.kill(signal));

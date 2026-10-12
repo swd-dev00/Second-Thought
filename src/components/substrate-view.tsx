@@ -1,171 +1,576 @@
-import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  LoaderCircle,
+  Plus,
+  Search,
+  Zap,
+} from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { WEIGHTS } from "@/lib/nmm/signals";
-import { TAVILY, TIERS } from "@/lib/nmm/models";
+import { TIERS } from "@/lib/nmm/models";
 import { probeLightning, probeTavily, substrateStatus } from "@/lib/nmm/probe";
 import type { Tier } from "@/lib/nmm/types";
 
-type Status = { tokenFactory: boolean; tavily: boolean };
-type LightningProbe =
-  | { ok: true; model: string; text: string; usage: { prompt_tokens?: number; completion_tokens?: number } | null }
-  | { ok: false; reason: string };
-type TavilyProbe = { ok: true; results: { title: string; url: string }[] } | { ok: false; reason: string };
+type Status = Awaited<ReturnType<typeof substrateStatus>>;
+type LightningProbe = Awaited<ReturnType<typeof probeLightning>>;
+type TavilyProbe = Awaited<ReturnType<typeof probeTavily>>;
+const MODEL_TIERS: Tier[] = ["lightning", "super", "ultra"];
+const MODEL_ROLES: Record<Tier, { label: string; description: string }> = {
+  lightning: {
+    label: "Start here",
+    description:
+      "Everyday cognition. Stay light when the evidence is clear and the problem is settled.",
+  },
+  super: {
+    label: "Go deeper",
+    description:
+      "Stronger reasoning when the calibration gap opens, before a larger model is justified.",
+  },
+  ultra: {
+    label: "Only when needed",
+    description: "More capacity for a well-framed problem that still needs deeper inference.",
+  },
+};
 
 export function SubstrateView() {
   const [status, setStatus] = useState<Status | null>(null);
+  const [statusError, setStatusError] = useState(false);
+  const [statusRevision, setStatusRevision] = useState(0);
   const [lightning, setLightning] = useState<LightningProbe | null>(null);
   const [tavily, setTavily] = useState<TavilyProbe | null>(null);
   const [busy, setBusy] = useState<"lightning" | "tavily" | null>(null);
-
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
   useEffect(() => {
-    let cancel = false;
-    substrateStatus()
-      .then((value) => {
-        if (!cancel) setStatus(value);
-      })
-      .catch(() => {
-        if (!cancel) setStatus({ tokenFactory: false, tavily: false });
-      });
+    mounted.current = true;
     return () => {
-      cancel = true;
+      mounted.current = false;
     };
   }, []);
-
+  useEffect(() => {
+    let ignore = false;
+    substrateStatus()
+      .then((value) => {
+        if (!ignore) setStatus(value);
+      })
+      .catch(() => {
+        if (!ignore) setStatusError(true);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [statusRevision]);
+  async function callLightning() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy("lightning");
+    setLightning(null);
+    try {
+      const result = await probeLightning();
+      if (mounted.current) setLightning(result);
+    } catch (error: unknown) {
+      if (mounted.current)
+        setLightning({
+          ok: false,
+          reason: error instanceof Error ? error.message : "Connection failed. Try again.",
+        });
+    } finally {
+      inFlight.current = false;
+      if (mounted.current) setBusy(null);
+    }
+  }
+  async function callTavily() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy("tavily");
+    setTavily(null);
+    try {
+      const result = await probeTavily();
+      if (mounted.current) setTavily(result);
+    } catch (error: unknown) {
+      if (mounted.current)
+        setTavily({
+          ok: false,
+          reason: error instanceof Error ? error.message : "Search connection failed. Try again.",
+        });
+    } finally {
+      inFlight.current = false;
+      if (mounted.current) setBusy(null);
+    }
+  }
   return (
-    <div className="flex flex-col gap-6">
-      <div className="max-w-3xl">
-        <p className="text-xs tracking-widest text-amber uppercase">Substrate</p>
-        <h1 className="mt-2 font-display text-3xl text-fg sm:text-4xl">
-          NMM underneath. Nemotron as a resource, not a default.
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted">
-          Second Thought does not read a model’s private state. Token Factory returns observable inference.
-          The calibration gap is computed from the packet, the probes, and the disagreement in front of us.
-          Metacognition here means changing the reasoning strategy before the error is allowed to become the answer.
+    <div className="substrate-page">
+      <section className="substrate-hero" aria-labelledby="substrate-heading">
+        <div className="substrate-hero-copy">
+          <p className="substrate-eyebrow">
+            <span className="substrate-signal-dot" /> Beneath the reasoning
+          </p>
+          <h1 id="substrate-heading">
+            Intelligence,
+            <br />
+            <em>on purpose.</em>
+          </h1>
+          <p className="substrate-hero-summary">NMM underneath. Nemotron, on demand.</p>
+          <p className="substrate-hero-description">
+            The right model is a resource, not a default. Second Thought observes the evidence,
+            measures the calibration gap, and changes the strategy before an unreliable answer takes
+            shape.
+          </p>
+          <div className="substrate-hero-actions">
+            <a className="substrate-button substrate-button-primary" href="#model-family">
+              Explore the substrate <ArrowDown size={16} aria-hidden="true" />
+            </a>
+            <Link className="substrate-text-link" to="/">
+              See it reason <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+          </div>
+          <p className="substrate-hero-note">One model family. Deliberate cognitive allocation.</p>
+        </div>
+        <div className="substrate-pass-wrap">
+          <div className="substrate-orbit" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <section className="substrate-pass" aria-label="Runtime overview">
+            <div className="substrate-pass-header">
+              <span className="substrate-eyebrow">Cognitive runtime</span>
+              <ArrowUpRight className="substrate-pass-mark" size={22} aria-hidden="true" />
+            </div>
+            <div className="substrate-pass-route">
+              <span>Evidence</span>
+              <ArrowRight size={24} aria-hidden="true" />
+              <span>Judgment</span>
+            </div>
+            <div className="substrate-pass-caption">
+              <span>INPUT</span>
+              <span>ALLOCATION, NOT AUTOPILOT</span>
+            </div>
+            <div className="substrate-controller">
+              <div>
+                <span className="substrate-micro-label">Regulatory layer</span>
+                <h2>NMM</h2>
+                <p>Observe. Calibrate. Allocate.</p>
+              </div>
+              <div className="substrate-controller-glyph" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+                <i />
+              </div>
+            </div>
+            <dl className="substrate-pass-details">
+              <div>
+                <dt>Model family</dt>
+                <dd>NVIDIA Nemotron</dd>
+              </div>
+              <div>
+                <dt>Inference provider</dt>
+                <dd>Nebius Token Factory</dd>
+              </div>
+              <div>
+                <dt>Evidence acquisition</dt>
+                <dd>Tavily</dd>
+              </div>
+            </dl>
+            <div className="substrate-pass-tear" aria-hidden="true" />
+            <div className="substrate-pass-status" aria-live="polite">
+              <div>
+                <span className="substrate-micro-label">Inference connection</span>
+                <span className="substrate-status-value">
+                  <span className="substrate-connection-dot" />
+                  {statusError
+                    ? "Status unavailable"
+                    : status
+                      ? status.tokenFactory
+                        ? "Key present"
+                        : "Key needed"
+                      : "Checking connection"}
+                </span>
+              </div>
+              <span className="substrate-barcode" aria-hidden="true" />
+            </div>
+            <p className="substrate-pass-footnote">The local harness runs without API keys.</p>
+          </section>
+          <p className="substrate-pass-coordinate">
+            <Plus size={12} aria-hidden="true" /> NMM / NEMOTRON / SECOND THOUGHT
+          </p>
+        </div>
+      </section>
+      <div className="substrate-principle-band">
+        <span className="substrate-eyebrow">The allocation principle</span>
+        <p>
+          More cognition <span>only when the gap calls for it.</span>
         </p>
+        <ArrowDown size={20} aria-hidden="true" />
       </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {(Object.keys(TIERS) as Tier[]).map((tier) => {
-          const model = TIERS[tier];
-          return (
-            <article key={tier} className="border border-line bg-panel p-4">
-              <p className="text-xs tracking-widest text-amber uppercase">{model.params}</p>
-              <h2 className="mt-2 font-display text-2xl text-fg">{model.name}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{model.role}</p>
-              <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <dt className="text-muted">Endpoint</dt>
-                  <dd className="mt-1 break-all text-fg">{model.id}</dd>
+      <section
+        id="model-family"
+        className="substrate-section substrate-paper"
+        aria-labelledby="models-heading"
+      >
+        <div className="substrate-section-inner">
+          <div className="substrate-section-heading">
+            <div>
+              <p className="substrate-eyebrow">One family. Three levels of reasoning.</p>
+              <h2 id="models-heading" className="substrate-editorial-heading">
+                A model for the moment.
+              </h2>
+            </div>
+            <p>
+              Start with Lightning.
+              <br />
+              Earn the escalation.
+            </p>
+          </div>
+          <div className="substrate-model-grid">
+            {MODEL_TIERS.map((tier, index) => {
+              const model = TIERS[tier];
+              return (
+                <article className="substrate-model" key={tier}>
+                  <div className="substrate-model-top">
+                    <span className="substrate-micro-label">{MODEL_ROLES[tier].label}</span>
+                    <span className="substrate-model-index">
+                      TIER {String(index + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <h3>{model.short}</h3>
+                  <p className="substrate-model-name">{model.name}</p>
+                  <p className="substrate-model-description">{MODEL_ROLES[tier].description}</p>
+                  <p className="substrate-model-params">{model.params}</p>
+                  <dl className="substrate-model-metrics">
+                    <div>
+                      <dt>Context window</dt>
+                      <dd>
+                        {model.context}
+                        <span> tokens</span>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Listed throughput</dt>
+                      <dd>
+                        {model.tokPerSec}
+                        <span> tok/s</span>
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="substrate-model-price">
+                    <span className="substrate-micro-label">Per 1M tokens</span>
+                    <span>
+                      {"$"}
+                      {model.inPerM.toFixed(2)} <span>in</span>
+                      <span className="substrate-price-separator">/</span>
+                      {"$"}
+                      {model.outPerM.toFixed(2)} <span>out</span>
+                    </span>
+                  </div>
+                  <details className="substrate-model-endpoint">
+                    <summary>
+                      Model endpoint <Plus size={13} aria-hidden="true" />
+                    </summary>
+                    <code>{model.id}</code>
+                  </details>
+                </article>
+              );
+            })}
+          </div>
+          <p className="substrate-section-note">
+            Published Token Factory list prices and endpoint throughput. The controller can
+            escalate, de-escalate, acquire evidence, or stop.
+          </p>
+          <section className="substrate-evidence" aria-labelledby="evidence-heading">
+            <Search size={29} strokeWidth={1} aria-hidden="true" />
+            <div>
+              <p className="substrate-eyebrow">When reasoning needs the world</p>
+              <h3 id="evidence-heading">Another model isn’t always the answer.</h3>
+              <p>
+                Tavily brings in new evidence only when surviving hypotheses cannot be separated by
+                the current packet. Search is a regulatory action, not an automatic detour.
+              </p>
+            </div>
+            <a className="substrate-text-link" href="#connections">
+              Test evidence acquisition <ArrowUpRight size={17} aria-hidden="true" />
+            </a>
+          </section>
+        </div>
+      </section>
+      <section className="substrate-section substrate-signals" aria-labelledby="signals-heading">
+        <div className="substrate-section-inner">
+          <div className="substrate-section-heading">
+            <div>
+              <p className="substrate-eyebrow">Observable evidence. Nothing private.</p>
+              <h2 id="signals-heading" className="substrate-stamp">
+                Read the signal
+              </h2>
+            </div>
+            <p>
+              Nine inputs.
+              <br />
+              One calibration gap.
+            </p>
+          </div>
+          <div className="substrate-signals-body">
+            <div className="substrate-signals-copy">
+              <h3>
+                What the gap
+                <br />
+                is allowed to see.
+              </h3>
+              <p>
+                Contradiction, incomplete coverage, unstable answers, old evidence. The gap comes
+                from the packet and the trace, never a model’s private state.
+              </p>
+              <p>
+                If a signal cannot be observed,
+                <br />
+                it is not in the gap.
+              </p>
+              <span className="substrate-micro-label">CONTROLLER WEIGHTS / SUM 1.00</span>
+            </div>
+            <dl className="substrate-signal-list">
+              {WEIGHTS.map((item) => (
+                <div key={item.key}>
+                  <dt>{item.label}</dt>
+                  <dd>
+                    <span className="substrate-weight-track" aria-hidden="true">
+                      <span style={{ width: String((item.w / 0.2) * 100) + "%" }} />
+                    </span>
+                    <span>{item.w.toFixed(2)}</span>
+                  </dd>
                 </div>
-                <div>
-                  <dt className="text-muted">Context</dt>
-                  <dd className="mt-1 text-fg">{model.context}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted">Price / 1M</dt>
-                  <dd className="mt-1 tabular-nums text-fg">${model.inPerM.toFixed(2)} in · ${model.outPerM.toFixed(2)} out</dd>
-                </div>
-                <div>
-                  <dt className="text-muted">Listed throughput</dt>
-                  <dd className="mt-1 tabular-nums text-fg">{model.tokPerSec} tok/s</dd>
-                </div>
-              </dl>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </section>
+      <section
+        id="connections"
+        className="substrate-section substrate-paper substrate-connections"
+        aria-labelledby="connections-heading"
+      >
+        <div className="substrate-section-inner">
+          <div className="substrate-section-heading">
+            <div>
+              <p className="substrate-eyebrow">From local harness to live inference</p>
+              <h2 id="connections-heading" className="substrate-editorial-heading">
+                Make contact.
+              </h2>
+            </div>
+            <p>
+              Check the connection.
+              <br />
+              Keep the judgment.
+            </p>
+          </div>
+          {statusError && (
+            <div className="substrate-status-error" role="status">
+              <p>
+                Connection status could not be checked. You can retry the status check or test
+                either service below.
+              </p>
+              <button
+                type="button"
+                className="substrate-button substrate-button-outline"
+                onClick={() => {
+                  setStatus(null);
+                  setStatusError(false);
+                  setStatusRevision((value) => value + 1);
+                }}
+              >
+                Retry status <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+          )}
+          <div className="substrate-connection-grid">
+            <article className="substrate-connection">
+              <div className="substrate-connection-heading">
+                <Zap size={23} strokeWidth={1.4} aria-hidden="true" />
+                <ConnectionStatus ready={status?.tokenFactory} error={statusError} />
+              </div>
+              <h3>Token Factory</h3>
+              <p className="substrate-connection-description">
+                Live inference from the Nemotron family. A short Lightning call checks that your
+                connection is ready.
+              </p>
+              <p className="substrate-connection-endpoint">api.tokenfactory.nebius.com</p>
+              <button
+                type="button"
+                className="substrate-button substrate-button-outline"
+                disabled={busy !== null}
+                aria-busy={busy === "lightning"}
+                aria-controls="lightning-result"
+                onClick={callLightning}
+              >
+                {busy === "lightning" ? (
+                  <LoaderCircle className="substrate-loader" size={16} aria-hidden="true" />
+                ) : (
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                )}
+                <span>{busy === "lightning" ? "Calling Lightning" : "Call Lightning"}</span>
+              </button>
+              <ProbeResult id="lightning-result" pending={busy === "lightning"} ok={lightning?.ok}>
+                {lightning ? (
+                  lightning.ok ? (
+                    <>
+                      <p>{lightning.text || "The connection responded without message text."}</p>
+                      <p className="substrate-result-meta">{lightning.model}</p>
+                      {lightning.usage && (
+                        <p className="substrate-result-meta">
+                          {lightning.usage.prompt_tokens ?? 0} input /{" "}
+                          {lightning.usage.completion_tokens ?? 0} output tokens
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p>{lightning.reason}</p>
+                  )
+                ) : (
+                  <p>A key enables live calls. The closed-world harness works without one.</p>
+                )}
+              </ProbeResult>
             </article>
-          );
-        })}
-      </div>
-
-      <article className="border border-amber bg-panel p-4">
-        <p className="text-xs tracking-widest text-amber uppercase">Epistemic acquisition</p>
-        <h2 className="mt-2 font-display text-2xl text-fg">{TAVILY.name}</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">{TAVILY.role}</p>
-      </article>
-
-      <section className="border border-line bg-panel p-4">
-        <h2 className="font-display text-2xl text-fg">What the gap is allowed to see</h2>
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-          {WEIGHTS.map((item) => (
-            <li key={item.key} className="flex items-baseline justify-between gap-3 border-b border-line py-2">
-              <span className="text-sm text-fg">{item.label}</span>
-              <span className="text-xs tabular-nums text-muted">weight {item.w.toFixed(2)}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">
-          Contradiction between evidence, support coverage, untested assumptions, instability under leave-one-out probes,
-          evidence age, hypothesis competition, task risk, failed verification, and reasoning that repeats without information gain.
-          If a signal cannot be computed from the packet and the trace, it is not in the gap.
-        </p>
+            <article className="substrate-connection">
+              <div className="substrate-connection-heading">
+                <Search size={23} strokeWidth={1.4} aria-hidden="true" />
+                <ConnectionStatus ready={status?.tavily} error={statusError} />
+              </div>
+              <h3>Tavily</h3>
+              <p className="substrate-connection-description">
+                New evidence when the packet cannot settle the question. Check the search connection
+                before a live trial.
+              </p>
+              <p className="substrate-connection-endpoint">api.tavily.com</p>
+              <button
+                type="button"
+                className="substrate-button substrate-button-outline"
+                disabled={busy !== null}
+                aria-busy={busy === "tavily"}
+                aria-controls="tavily-result"
+                onClick={callTavily}
+              >
+                {busy === "tavily" ? (
+                  <LoaderCircle className="substrate-loader" size={16} aria-hidden="true" />
+                ) : (
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                )}
+                <span>{busy === "tavily" ? "Calling Tavily" : "Call Tavily"}</span>
+              </button>
+              <ProbeResult id="tavily-result" pending={busy === "tavily"} ok={tavily?.ok}>
+                {tavily ? (
+                  tavily.ok ? (
+                    tavily.results.length ? (
+                      <ul className="substrate-search-results">
+                        {tavily.results.map((item, index) => (
+                          <li key={item.url + index}>
+                            <span>{item.title}</span>
+                            <span className="substrate-result-meta">{item.url}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>The connection is ready. No results were returned for this test query.</p>
+                    )
+                  ) : (
+                    <p>{tavily.reason}</p>
+                  )
+                ) : (
+                  <p>
+                    A key enables evidence acquisition. Search runs only when the controller calls
+                    for it.
+                  </p>
+                )}
+              </ProbeResult>
+            </article>
+          </div>
+        </div>
       </section>
-
-      <section className="grid gap-3 lg:grid-cols-2">
-        <article className="border border-line bg-ink p-4">
-          <h2 className="font-display text-2xl text-fg">Token Factory</h2>
-          <p className="mt-2 text-sm text-muted">
-            OpenAI-compatible chat completions at api.tokenfactory.nebius.com. Status:{" "}
-            {status ? (status.tokenFactory ? "key present" : "key absent") : "checking"}.
+      <section className="substrate-job" aria-labelledby="jobs-heading">
+        <div>
+          <p className="substrate-eyebrow">Beyond the request path</p>
+          <h2 id="jobs-heading">
+            Same battery.
+            <br />
+            <em>Bigger questions.</em>
+          </h2>
+        </div>
+        <div>
+          <p>
+            The evaluation lab is the job: the same controlled trials, the same metrics. Move the
+            workload off the request path when trial counts or live inference outgrow a browser
+            session.
           </p>
-          <button
-            type="button"
-            className="mt-4 h-11 bg-amber px-4 text-sm text-ink disabled:opacity-50"
-            disabled={busy !== null}
-            onClick={() => {
-              setBusy("lightning");
-              setLightning(null);
-              probeLightning()
-                .then(setLightning)
-                .catch((error: unknown) => setLightning({ ok: false, reason: error instanceof Error ? error.message : "Probe failed." }))
-                .finally(() => setBusy(null));
-            }}
-          >
-            {busy === "lightning" ? "Calling Lightning" : "Call Lightning"}
-          </button>
-          {lightning ? <ProbeResult body={lightning.ok ? `${lightning.model}\n${lightning.text}\n${JSON.stringify(lightning.usage)}` : lightning.reason} /> : null}
-        </article>
-        <article className="border border-line bg-ink p-4">
-          <h2 className="font-display text-2xl text-fg">Tavily</h2>
-          <p className="mt-2 text-sm text-muted">
-            Search is a regulatory action, not a sidebar. Status: {status ? (status.tavily ? "key present" : "key absent") : "checking"}.
-          </p>
-          <button
-            type="button"
-            className="mt-4 h-11 border border-amber px-4 text-sm text-amber disabled:opacity-50"
-            disabled={busy !== null}
-            onClick={() => {
-              setBusy("tavily");
-              setTavily(null);
-              probeTavily()
-                .then(setTavily)
-                .catch((error: unknown) => setTavily({ ok: false, reason: error instanceof Error ? error.message : "Probe failed." }))
-                .finally(() => setBusy(null));
-            }}
-          >
-            {busy === "tavily" ? "Calling Tavily" : "Call Tavily"}
-          </button>
-          {tavily ? (
-            <ProbeResult
-              body={
-                tavily.ok
-                  ? tavily.results.map((item) => `${item.title}\n${item.url}`).join("\n\n") || "No results."
-                  : tavily.reason
-              }
-            />
-          ) : null}
-        </article>
+          <Link className="substrate-text-link" to="/lab">
+            Open the evaluation lab <ArrowUpRight size={18} aria-hidden="true" />
+          </Link>
+        </div>
       </section>
-
-      <section className="max-w-3xl">
-        <h2 className="font-display text-2xl text-fg">Serverless Jobs</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          The evaluation lab is the job: the same battery, the same metrics, run off the request path when the trial count or the live model calls no longer belong in a browser.
-          Lightning when the state is already calm. Super when the gap is opening. Ultra when contradiction, incomplete evidence, unresolved competition, and consequence line up.
-          Then back down. That allocation is the feedback the stack is there to measure.
-        </p>
-      </section>
+      <footer className="substrate-footer">
+        <div>
+          <Plus size={17} strokeWidth={1} aria-hidden="true" />
+          <span>Second Thought</span>
+          <span className="substrate-footer-muted">Powered by NMM</span>
+        </div>
+        <span className="substrate-micro-label">OBSERVE → CALIBRATE → ALLOCATE</span>
+      </footer>
     </div>
   );
 }
-
-function ProbeResult({ body }: { body: string }) {
-  return <pre className="mt-4 max-h-48 overflow-auto border border-line bg-panel p-3 text-xs leading-relaxed whitespace-pre-wrap text-fg">{body}</pre>;
+function ConnectionStatus({ ready, error }: { ready?: boolean; error: boolean }) {
+  return (
+    <span className="substrate-connection-status">
+      <span className="substrate-connection-dot" />
+      {error
+        ? "Status unavailable"
+        : ready === undefined
+          ? "Checking"
+          : ready
+            ? "Key present"
+            : "Key needed"}
+    </span>
+  );
+}
+function ProbeResult({
+  id,
+  pending,
+  ok,
+  children,
+}: {
+  id: string;
+  pending: boolean;
+  ok?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      id={id}
+      className="substrate-probe-result"
+      tabIndex={0}
+      aria-label={id === "lightning-result" ? "Token Factory response" : "Tavily response"}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <div className="substrate-probe-result-heading">
+        {pending ? (
+          <>
+            <LoaderCircle className="substrate-loader" size={13} aria-hidden="true" /> Waiting for
+            response
+          </>
+        ) : ok === true ? (
+          <>
+            <Check size={13} aria-hidden="true" /> Connection verified
+          </>
+        ) : ok === false ? (
+          <>Connection unavailable</>
+        ) : (
+          <>Before you call</>
+        )}
+      </div>
+      {!pending && children}
+    </div>
+  );
 }

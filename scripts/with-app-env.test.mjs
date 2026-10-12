@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -16,6 +16,46 @@ import {
 const execFileAsync = promisify(execFile);
 const WRAPPER = join(projectRoot(), "scripts/with-app-env.mjs");
 const PRINT_FLAG = "process.stdout.write(String(process.env.VITE_AUTH_ENABLED));";
+
+function makeViteWorkspace(t, installed = true) {
+  const root = mkdtempSync(join(tmpdir(), "app-env-vite & "));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(join(root, "scripts"));
+  copyFileSync(WRAPPER, join(root, "scripts/with-app-env.mjs"));
+  mkdirSync(join(root, ".grok"));
+  writeFileSync(join(root, APP_ENV_REL_PATH), '{"VITE_AUTH_ENABLED":"false"}');
+  if (installed) {
+    const vite = join(root, "node_modules/vite");
+    mkdirSync(join(vite, "bin"), { recursive: true });
+    writeFileSync(join(vite, "package.json"), '{"name":"vite","type":"module"}');
+    writeFileSync(
+      join(vite, "bin/vite.js"),
+      "console.log(JSON.stringify({args: process.argv.slice(2), auth: process.env.VITE_AUTH_ENABLED}));",
+    );
+  }
+  return root;
+}
+
+test("Vite runs without a PATH shim and preserves literal arguments and app flags", async (t) => {
+  const root = makeViteWorkspace(t);
+  const args = ["dev", "--host", "0.0.0.0", "--port", "8080", "literal & value; $HOME"];
+  const env = { ...process.env, PATH: "" };
+  delete env.VITE_AUTH_ENABLED;
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [join(root, "scripts/with-app-env.mjs"), "vite", ...args],
+    { env, cwd: tmpdir() },
+  );
+  assert.deepEqual(JSON.parse(stdout), { args, auth: "false" });
+});
+
+test("missing Vite dependencies produce an actionable installation error", async (t) => {
+  const root = makeViteWorkspace(t, false);
+  await assert.rejects(
+    execFileAsync(process.execPath, [join(root, "scripts/with-app-env.mjs"), "vite", "dev"]),
+    (error) => error.code === 127 && /Vite is not installed.*npm ci/.test(error.stderr),
+  );
+});
 
 function makeWorkspace(appEnvJson) {
   const root = mkdtempSync(join(tmpdir(), "app-env-"));
