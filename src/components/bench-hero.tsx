@@ -69,6 +69,9 @@ export function BenchHero({
   const currentTier = latestTierEvent ? TIERS[latestTierEvent.tier].short : "LIGHTNING";
   const currentCcg = lastRead && lastRead.type === "read" ? ccg(lastRead.ccg) : "—";
   const decision = currentDecision(events);
+  const firstRead = events.find((event) => event.type === "read");
+  const latestRead = [...events].reverse().find((event) => event.type === "read");
+  const latestAction = [...events].reverse().find((event) => event.type === "action");
   const interventionCount = events.filter((event) => event.type === "action").length;
   const clampedProgress = Math.max(0, Math.min(100, progress * 100));
   const runPhase = complete
@@ -157,6 +160,9 @@ export function BenchHero({
                   <Play size={15} aria-hidden="true" /> Resume
                 </button>
               ) : null}
+              <a href="#live-witness" className="bench-run-detail-link">
+                Try real NVIDIA inference <ArrowUpRight size={16} aria-hidden="true" />
+              </a>
               <a href="#bench-workbench" className="bench-run-detail-link">
                 Inspect full trace <ArrowDownRight size={16} aria-hidden="true" />
               </a>
@@ -193,6 +199,30 @@ export function BenchHero({
                     : "The 15-second replay shows the controller's decisions as they happen."}
               </p>
             </div>
+            <section className="bench-decision-shift" aria-label="How NMM changed the decision">
+              <div className="bench-decision-shift-head">
+                <span>THE DECISION SHIFT</span>
+                <strong>{complete ? "CAUGHT BEFORE COMMIT" : events.length ? "INTERVENING" : "WAITING"}</strong>
+              </div>
+              <div className="bench-decision-shift-grid">
+                <div>
+                  <span>First read</span>
+                  <p>{firstRead && firstRead.type === "read" ? firstRead.text : "No hypothesis formed yet."}</p>
+                </div>
+                <div>
+                  <span>What NMM noticed</span>
+                  <p>{latestRead && latestRead.type === "read" ? latestRead.text : "Waiting for observable evidence signals."}</p>
+                </div>
+                <div>
+                  <span>What changed</span>
+                  <p>{latestAction && latestAction.type === "action" ? latestAction.detail : "No regulatory intervention yet."}</p>
+                </div>
+                <div>
+                  <span>Final judgment</span>
+                  <p>{complete ? run.regulated.answerLabel : "Not committed."}</p>
+                </div>
+              </div>
+            </section>
           </div>
           <p className="bench-hero-disclosure">
             <span className="bench-disclosure-line" />A deterministic, closed-world replay. Provider

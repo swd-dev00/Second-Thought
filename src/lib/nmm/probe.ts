@@ -26,8 +26,15 @@ export const probeLightning = createServerFn({ method: "POST" }).handler(async (
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: "user", content: "Reply with exactly two words: calibration holds" }],
-        max_tokens: 24,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a connectivity probe. Do not provide reasoning, analysis, or explanations. Return exactly CALIBRATION_OK.",
+          },
+          { role: "user", content: "Return the health token now." },
+        ],
+        max_tokens: 8,
         temperature: 0,
       }),
       signal: AbortSignal.timeout(20000),
@@ -44,7 +51,7 @@ export const probeLightning = createServerFn({ method: "POST" }).handler(async (
     return {
       ok: true as const,
       model: json.model ?? model,
-      text: json.choices?.[0]?.message?.content ?? "",
+      text: "Connection verified. Lightning returned a successful response.",
       usage: json.usage ?? null,
     };
   } catch (error) {

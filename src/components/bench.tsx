@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { BenchHero } from "@/components/bench-hero";
+import { LiveWitness } from "@/components/live-witness";
 import { CANONICAL } from "@/lib/nmm/trials";
 import { runTrial } from "@/lib/nmm/engine";
 import { substrateStatus } from "@/lib/nmm/probe";
@@ -26,6 +27,14 @@ function latestRead(events: TraceEvent[]) {
   return [...events].reverse().find((event) => event.type === "read");
 }
 
+function currentTierOf(events: TraceEvent[]): "lightning" | "super" | "ultra" {
+  for (let index = events.length - 1; index >= 0; index--) {
+    const event = events[index]!;
+    if (event.type !== "monologue") return event.tier;
+  }
+  return "lightning";
+}
+
 function policyOf(trialId: string): string {
   if (trialId === "berth-7")
     return "Escalate through the model family when deeper reasoning and new evidence can materially change the answer.";
@@ -37,6 +46,7 @@ function policyOf(trialId: string): string {
 export function Bench() {
   const [trialId, setTrialId] = useState(CANONICAL[0]!.id);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
+  const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [playhead, setPlayhead] = useState(0);
   const [runtime, setRuntime] = useState<{ tokenFactory: boolean; tavily: boolean } | null>(null);
@@ -46,6 +56,10 @@ export function Bench() {
   );
   const end = endOf(run);
   const done = playhead >= end - 1;
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   useEffect(() => {
     substrateStatus()
@@ -125,6 +139,7 @@ export function Bench() {
         onPause={() => setPlaying(false)}
         onResume={() => setPlaying(true)}
       />
+      <LiveWitness providerReady={runtime?.tokenFactory ?? null} />
       <div className="bench-content">
         <div className="bench-live-strip">
           <RuntimeStrip status={runtime} />
