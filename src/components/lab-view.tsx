@@ -131,7 +131,7 @@ export function LabView() {
 
         <div className="lab-metric-grid">
           <Metric
-            label="Intervention success"
+            label="Closed-world intervention success"
             value={pct(report.interventionSuccess)}
             detail="Share of baseline failures the controller corrected, including warranted abstention."
             index="01"
