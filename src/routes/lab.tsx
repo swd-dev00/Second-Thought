@@ -6,7 +6,7 @@ export const Route = createFileRoute("/lab")({ component: LabPage });
 
 function LabPage() {
   return (
-    <Shell>
+    <Shell variant="lab">
       <LabView />
     </Shell>
   );

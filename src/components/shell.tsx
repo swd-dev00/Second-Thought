@@ -14,22 +14,21 @@ export function Shell({
   variant = "default",
 }: {
   children: ReactNode;
-  variant?: "default" | "substrate" | "bench";
+  variant?: "default" | "substrate" | "bench" | "lab";
 }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
+  const styled = variant !== "default";
   const substrate = variant === "substrate";
-  const styled = substrate || variant === "bench";
+  const shellClass = substrate
+    ? "substrate-shell"
+    : variant === "lab"
+      ? "substrate-shell lab-shell"
+      : variant === "bench"
+        ? "substrate-shell bench-shell"
+        : "min-h-screen bg-ink text-fg";
 
   return (
-    <div
-      className={
-        styled
-          ? substrate
-            ? "substrate-shell"
-            : "substrate-shell bench-shell"
-          : "min-h-screen bg-ink text-fg"
-      }
-    >
+    <div className={shellClass}>
       {styled && (
         <a className="substrate-skip-link" href="#substrate-content">
           Skip to content
@@ -37,14 +36,14 @@ export function Shell({
       )}
       <header
         className={
-          substrate
+          styled
             ? "substrate-nav"
             : "sticky top-0 z-20 border-b border-line bg-ink/95 backdrop-blur"
         }
       >
         <div
           className={
-            substrate
+            styled
               ? "substrate-nav-inner"
               : "mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3"
           }
@@ -105,9 +104,15 @@ export function Shell({
           {styled && (
             <a
               className="substrate-nav-action"
-              href={substrate ? "#connections" : "#bench-workbench"}
+              href={
+                substrate ? "#connections" : variant === "lab" ? "#lab-results" : "#bench-workbench"
+              }
             >
-              {substrate ? "Check connections" : "Enter the replay"}{" "}
+              {substrate
+                ? "Check connections"
+                : variant === "lab"
+                  ? "Explore results"
+                  : "Enter the replay"}
               <ArrowUpRight size={14} aria-hidden="true" />
             </a>
           )}

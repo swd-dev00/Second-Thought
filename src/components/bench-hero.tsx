@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowDownRight, ArrowUpRight, Play } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Pause, Play } from "lucide-react";
 import { TIERS } from "@/lib/nmm/models";
 import { ccg } from "@/lib/nmm/format";
 import type { TraceEvent, TrialRun } from "@/lib/nmm/types";
@@ -9,7 +9,10 @@ type BenchHeroProps = {
   events: TraceEvent[];
   progress: number;
   complete: boolean;
+  playing: boolean;
   onRun: () => void;
+  onPause: () => void;
+  onResume: () => void;
 };
 
 function currentDecision(events: TraceEvent[]): { label: string; detail: string } {
@@ -43,14 +46,50 @@ function currentDecision(events: TraceEvent[]): { label: string; detail: string 
   return { label: "Reading", detail: "A trace event has been recorded." };
 }
 
-export function BenchHero({ run, events, progress, complete, onRun }: BenchHeroProps) {
+export function BenchHero({
+  run,
+  events,
+  progress,
+  complete,
+  playing,
+  onRun,
+  onPause,
+  onResume,
+}: BenchHeroProps) {
+  const latestTierEvent = [...events]
+    .reverse()
+    .find(
+      (event) =>
+        event.type === "read" ||
+        event.type === "action" ||
+        event.type === "commit" ||
+        event.type === "halt",
+    );
   const lastRead = [...events].reverse().find((event) => event.type === "read");
-  const currentTier =
-    lastRead && lastRead.type === "read" ? TIERS[lastRead.tier].short : "LIGHTNING";
+  const currentTier = latestTierEvent ? TIERS[latestTierEvent.tier].short : "LIGHTNING";
   const currentCcg = lastRead && lastRead.type === "read" ? ccg(lastRead.ccg) : "—";
   const decision = currentDecision(events);
   const interventionCount = events.filter((event) => event.type === "action").length;
   const clampedProgress = Math.max(0, Math.min(100, progress * 100));
+  const runPhase = complete
+    ? "COMPLETE"
+    : playing
+      ? "RUNNING"
+      : clampedProgress > 0
+        ? "PAUSED"
+        : "READY";
+  const caseTitle =
+    run.trial.id === "berth-7"
+      ? "Why did cargo dwell time increase 41% at Berth 7?"
+      : run.trial.id === "yield-440"
+        ? "What if the evidence cannot tell two causes apart?"
+        : "When is a smaller model already enough?";
+  const caseExplanation =
+    run.trial.id === "berth-7"
+      ? "Berth 7 is a shipping terminal. Cargo is moving more slowly, and the obvious explanation may be wrong. See how the system examines competing causes instead of simply agreeing with the first report."
+      : run.trial.id === "yield-440"
+        ? "Two explanations fit the available observations. Watch NMM identify the missing evidence and decide whether it should stop instead of guess."
+        : "The evidence already supports an answer. Watch NMM decide whether expensive, deeper inference would add anything useful.";
   const stage = complete
     ? "TRACE COMPLETE"
     : events.length
@@ -81,14 +120,79 @@ export function BenchHero({ run, events, progress, complete, onRun }: BenchHeroP
             Metacognitive Regulatory Layer decide whether to challenge, acquire, escalate, commit,
             or stop.
           </p>
-          <div className="bench-hero-actions">
-            <button type="button" className="bench-hero-primary" onClick={onRun}>
-              <Play size={15} fill="currentColor" aria-hidden="true" />
-              Run Berth 7
-            </button>
-            <a href="#bench-workbench" className="bench-hero-outline">
-              Enter the runtime <ArrowDownRight size={18} aria-hidden="true" />
-            </a>
+          <div
+            className={playing && !complete ? "bench-run-card is-running" : "bench-run-card"}
+            aria-labelledby="bench-case-title"
+          >
+            <div className="bench-run-card-top">
+              <span className="bench-run-eyebrow">CASE STUDY / {run.trial.kicker}</span>
+              <span className="bench-run-phase" data-phase={runPhase}>
+                <span className="bench-run-phase-dot" aria-hidden="true" /> {runPhase}
+              </span>
+            </div>
+            <h2 id="bench-case-title">{caseTitle}</h2>
+            <p className="bench-run-explanation" id="bench-case-intro">
+              {caseExplanation}
+            </p>
+            <div className="bench-hero-actions">
+              <button
+                type="button"
+                className="bench-hero-primary"
+                onClick={onRun}
+                aria-describedby="bench-case-intro"
+              >
+                <Play size={15} fill="currentColor" aria-hidden="true" />
+                {complete
+                  ? "Replay this case"
+                  : playing || clampedProgress > 0
+                    ? "Restart this case"
+                    : "Run this case"}
+              </button>
+              {playing && !complete ? (
+                <button type="button" className="bench-hero-outline" onClick={onPause}>
+                  <Pause size={15} aria-hidden="true" /> Pause
+                </button>
+              ) : !complete && clampedProgress > 0 ? (
+                <button type="button" className="bench-hero-outline" onClick={onResume}>
+                  <Play size={15} aria-hidden="true" /> Resume
+                </button>
+              ) : null}
+              <a href="#bench-workbench" className="bench-run-detail-link">
+                Inspect full trace <ArrowDownRight size={16} aria-hidden="true" />
+              </a>
+            </div>
+            <div className="bench-run-monitor">
+              <div className="bench-run-monitor-top">
+                <span id="bench-run-status" role="status" aria-live="polite">
+                  {complete
+                    ? "Investigation finished. Review the verdict below."
+                    : playing
+                      ? "Investigating: " + decision.label
+                      : clampedProgress > 0
+                        ? "Paused: " + decision.label
+                        : "Ready to examine the evidence"}
+                </span>
+                <strong>{Math.round(clampedProgress)}%</strong>
+              </div>
+              <div
+                id="bench-run-progress"
+                className="bench-run-progress"
+                role="progressbar"
+                aria-label="Investigation replay progress"
+                aria-valuenow={Math.round(clampedProgress)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <span style={{ width: clampedProgress + "%" }} />
+              </div>
+              <p className="bench-run-monitor-detail">
+                {complete
+                  ? decision.detail
+                  : playing && events.length
+                    ? decision.detail
+                    : "The 15-second replay shows the controller's decisions as they happen."}
+              </p>
+            </div>
           </div>
           <p className="bench-hero-disclosure">
             <span className="bench-disclosure-line" />A deterministic, closed-world replay. Provider
@@ -143,7 +247,7 @@ export function BenchHero({ run, events, progress, complete, onRun }: BenchHeroP
           </div>
           <div className="bench-stage-measures">
             <div>
-              <span>CURRENT MODEL</span>
+              <span>{complete ? "FINAL MODEL" : "ALLOCATED MODEL"}</span>
               <strong>{currentTier}</strong>
             </div>
             <div>

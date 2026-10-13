@@ -31,7 +31,10 @@ try {
   assert.match(heading, /the verdict/);
   assert(await page.locator(".bench-stage-rings").isVisible());
   assert((await page.locator(".bench-chapter").count()) === 3);
-  results.push("desktop hero, regulatory orbit, and three trials");
+  assert.match(await page.locator(".bench-stage-state").innerText(), /AWAITING FIRST READ/);
+  assert.equal(await page.locator(".bench-stage-decision strong").innerText(), "Awaiting evidence");
+  assert.equal(await page.getByText("Ground truth:", { exact: false }).count(), 0);
+  results.push("desktop hero, regulatory orbit, three trials, and no premature verdict");
   mkdirSync("artifacts", { recursive: true });
   await page.screenshot({ path: "artifacts/bench-cinematic-desktop.png", fullPage: true });
 
@@ -45,12 +48,44 @@ try {
   );
   results.push("scoped midnight visual tokens: " + css.family);
 
-  const run = page.getByRole("button", { name: "Run Berth 7" });
+  const caseCard = page.locator(".bench-run-card");
+  assert.match(await caseCard.locator("h2").innerText(), /41%.*Berth 7/i);
+  assert.match(await caseCard.locator(".bench-run-explanation").innerText(), /shipping terminal/i);
+  assert.equal(await caseCard.getByRole("progressbar").getAttribute("aria-valuenow"), "0");
+  const run = caseCard.getByRole("button", { name: "Run this case" });
   await run.click();
+  await page.waitForFunction(
+    () => Number(document.querySelector("#bench-run-progress")?.getAttribute("aria-valuenow")) > 0,
+    null,
+    { timeout: 30000 },
+  );
+  const barBounds = await caseCard.getByRole("progressbar").boundingBox();
+  assert(
+    barBounds && barBounds.y >= 0 && barBounds.y + barBounds.height <= 950,
+    "Run must keep the progress bar visibly in the same viewport as the case card",
+  );
+  assert.match(await caseCard.locator("#bench-run-status").innerText(), /Investigating|finished/i);
+  results.push("Run exposes live progress beside the case explanation and button");
   assert(await page.locator("#bench-workbench").isVisible());
   await page.getByRole("button", { name: "Step forward" }).click();
   assert((await page.locator(".bench-stage-decision strong").count()) === 1);
   results.push("Berth 7 CTA and replay stepping");
+  for (let i = 0; i < 36; i++) {
+    if (/TRACE COMPLETE/.test(await page.locator(".bench-stage-state").innerText())) break;
+    await page.getByRole("button", { name: "Step forward" }).click();
+  }
+  assert.match(await page.locator(".bench-stage-state").innerText(), /TRACE COMPLETE/);
+  assert.match(await page.locator(".bench-stage-measures").innerText(), /FINAL MODEL/);
+  assert.equal(await page.locator(".bench-stage-measures strong").first().innerText(), "Lightning");
+  assert.match(
+    await page.locator(".bench-provider-note").innerText(),
+    /not a successful live API request/i,
+  );
+  assert.match(
+    await page.getByText("deterministic harness estimates", { exact: false }).innerText(),
+    /not observed Nebius usage/i,
+  );
+  results.push("final model reflects de-escalation, and estimates and keys are labeled");
 
   await page.locator(".bench-chapter").nth(1).click();
   await page.waitForFunction(

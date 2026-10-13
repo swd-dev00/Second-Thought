@@ -37,7 +37,7 @@ function policyOf(trialId: string): string {
 export function Bench() {
   const [trialId, setTrialId] = useState(CANONICAL[0]!.id);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [playhead, setPlayhead] = useState(0);
   const [runtime, setRuntime] = useState<{ tokenFactory: boolean; tavily: boolean } | null>(null);
   const run = useMemo(
@@ -61,10 +61,10 @@ export function Bench() {
   }, []);
 
   useEffect(() => {
+    // Let visitors initiate each replay; do not reveal the verdict on arrival.
+    // Reduced-motion visitors can still play or step through the trace themselves.
     setPlayhead(0);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setPlaying(!reduce);
-    if (reduce) setPlayhead(end);
+    setPlaying(false);
   }, [trialId, end]);
 
   useEffect(() => {
@@ -110,20 +110,28 @@ export function Bench() {
         events={regEvents}
         progress={playhead / end}
         complete={done}
+        playing={playing}
         onRun={() => {
-          setTrialId("berth-7");
           setPlayhead(0);
           setPlaying(true);
-          document.getElementById("bench-workbench")?.scrollIntoView({
-            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-              ? "auto"
-              : "smooth",
+          // Reveal feedback beside the button, never jump away to the workbench.
+          requestAnimationFrame(() => {
+            document.getElementById("bench-run-progress")?.scrollIntoView({
+              behavior: "auto",
+              block: "nearest",
+            });
           });
         }}
+        onPause={() => setPlaying(false)}
+        onResume={() => setPlaying(true)}
       />
       <div className="bench-content">
         <div className="bench-live-strip">
           <RuntimeStrip status={runtime} />
+          <p className="bench-provider-note">
+            Key status reflects configuration, not a successful live API request. The trials below
+            replay modeled evidence rather than fetching live results.
+          </p>
         </div>
         <section className="bench-chapters" aria-labelledby="bench-trials-heading">
           <div className="bench-chapters-head">
@@ -351,12 +359,12 @@ function RuntimeStrip({ status }: { status: { tokenFactory: boolean; tavily: boo
     { label: "NMM controller", value: "ACTIVE", active: true },
     {
       label: "Nebius Token Factory",
-      value: status === null ? "CHECKING" : status.tokenFactory ? "ARMED" : "KEY NEEDED",
+      value: status === null ? "CHECKING" : status.tokenFactory ? "KEY SET" : "KEY NEEDED",
       active: Boolean(status?.tokenFactory),
     },
     {
       label: "Tavily acquisition",
-      value: status === null ? "CHECKING" : status.tavily ? "ARMED" : "KEY NEEDED",
+      value: status === null ? "CHECKING" : status.tavily ? "KEY SET" : "KEY NEEDED",
       active: Boolean(status?.tavily),
     },
   ];
@@ -712,7 +720,14 @@ function EventRow({ event }: { event: TraceEvent }) {
     return (
       <article className="border border-amber bg-ink px-3 py-2">
         <p className="text-xs tracking-widest text-amber uppercase">{event.title}</p>
-        <p className="mt-1 text-sm text-fg">{event.detail}</p>
+        <p className="mt-1 text-sm text-fg">
+          {event.action === "acquire"
+            ? event.detail.replace(
+                /Tavily returns (\d+) observations\./,
+                "The closed-world harness supplies $1 modeled observations. No live Tavily request occurs in this replay.",
+              )
+            : event.detail}
+        </p>
       </article>
     );
   }
@@ -824,7 +839,9 @@ function Verdict({ run }: { run: TrialRun }) {
         run.trial.truth);
   return (
     <section className="border border-line bg-ink p-4">
-      <p className="text-xs tracking-widest text-muted uppercase">Measured on this trace</p>
+      <p className="text-xs tracking-widest text-muted uppercase">
+        Modeled outcome · closed-world trial
+      </p>
       <p className="mt-2 font-display text-2xl text-fg">Ground truth: {truth}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <StatBlock
@@ -844,6 +861,10 @@ function Verdict({ run }: { run: TrialRun }) {
           ]}
         />
       </div>
+      <p className="mt-4 text-xs leading-relaxed text-muted">
+        Token counts, costs and latency values are deterministic harness estimates, not observed
+        Nebius usage, billing or live inference timings.
+      </p>
     </section>
   );
 }

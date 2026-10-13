@@ -944,3 +944,193 @@
     stroke: CanvasText;
   }
 }
+
+.bench-provider-note {
+  margin: 12px 6px 0;
+  color: #9a96a6;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Replay control and progress share one card, so feedback is visible at the point of action. */
+.bench-run-card {
+  margin-top: 32px;
+  padding: 24px 25px 22px;
+  border: 1px solid rgba(225, 189, 255, 0.3);
+  border-radius: 14px;
+  background: linear-gradient(
+    140deg,
+    rgba(34, 23, 45, 0.79),
+    rgba(15, 14, 22, 0.9) 57%,
+    rgba(12, 10, 17, 0.94)
+  );
+  transition:
+    border-color 0.25s,
+    background 0.25s;
+}
+.bench-run-card.is-running {
+  border-color: rgba(175, 80, 255, 0.8);
+  background: linear-gradient(140deg, rgba(50, 25, 67, 0.76), rgba(16, 12, 23, 0.94) 62%);
+}
+.bench-run-card-top,
+.bench-run-monitor-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bench-run-eyebrow,
+.bench-run-phase {
+  font-family: "Substrate Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  line-height: 1.45;
+}
+.bench-run-eyebrow {
+  color: #c6adcf;
+  text-transform: uppercase;
+}
+.bench-run-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  color: #bbb4c1;
+}
+.bench-run-phase-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6e6775;
+}
+.bench-run-phase[data-phase="RUNNING"] {
+  color: #ecc9ff;
+}
+.bench-run-phase[data-phase="RUNNING"] .bench-run-phase-dot {
+  background: #c17bff;
+  box-shadow:
+    0 0 0 5px rgba(175, 80, 255, 0.15),
+    0 0 16px rgba(175, 80, 255, 0.55);
+  animation: bench-run-breathe 1.8s ease-in-out infinite;
+}
+.bench-run-phase[data-phase="COMPLETE"] {
+  color: #dcb5ff;
+}
+.bench-run-phase[data-phase="COMPLETE"] .bench-run-phase-dot {
+  background: #c17bff;
+}
+.bench-run-card h2 {
+  margin: 15px 0 0;
+  font-family: "Substrate Inter", Arial, sans-serif;
+  font-size: clamp(19px, 1.8vw, 25px);
+  letter-spacing: -0.04em;
+  font-weight: 450;
+  line-height: 1.23;
+  text-wrap: balance;
+}
+.bench-run-explanation {
+  margin: 10px 0 0;
+  color: #c0b9c6;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.bench-run-card .bench-hero-actions {
+  margin-top: 20px;
+  gap: 10px;
+}
+.bench-run-card .bench-hero-primary,
+.bench-run-card .bench-hero-outline {
+  min-height: 44px;
+  padding: 9px 15px;
+  font-size: 12px;
+}
+.bench-run-detail-link {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  color: #ddd0e5;
+  font-size: 12px;
+  min-height: 44px;
+}
+.bench-run-detail-link:hover {
+  color: #f7f9fa;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.bench-run-monitor {
+  margin-top: 23px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(225, 189, 255, 0.19);
+}
+.bench-run-monitor-top {
+  align-items: baseline;
+  color: #ead9f4;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.bench-run-monitor-top strong {
+  color: #f1d6ff;
+  font-family: "Substrate Mono", monospace;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.bench-run-progress {
+  height: 10px;
+  width: 100%;
+  margin-top: 11px;
+  overflow: hidden;
+  border: 1px solid rgba(225, 189, 255, 0.16);
+  border-radius: 100px;
+  background: rgba(247, 249, 250, 0.1);
+}
+.bench-run-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8841d1, #c784ff);
+  box-shadow: 0 0 20px rgba(175, 80, 255, 0.9);
+  transition: width 0.16s linear;
+}
+.bench-run-monitor-detail {
+  margin-top: 8px;
+  color: #a9a0b0;
+  font-size: 11px;
+  line-height: 1.5;
+  min-height: 17px;
+}
+@keyframes bench-run-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (max-width: 600px) {
+  .bench-run-card {
+    padding: 18px 17px;
+    margin-top: 25px;
+  }
+  .bench-run-card-top {
+    flex-wrap: wrap;
+  }
+  .bench-run-card h2 {
+    font-size: 20px;
+  }
+  .bench-run-card .bench-hero-actions {
+    gap: 8px;
+  }
+  .bench-run-detail-link {
+    min-height: 35px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bench-run-phase-dot,
+  .bench-run-progress > span {
+    animation: none !important;
+    transition: none !important;
+  }
+}
