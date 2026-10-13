@@ -16,6 +16,12 @@ DOM sampling and intermittent screenshots do not exclude a compositor, browser,
 recording, or navigation-specific flash. The unpushed Windows audit changes and
 their exact browser conditions were not available during this check.
 
+A later Windows transcript records Vite optimizing lucide-react and then
+reporting "optimized dependencies changed. reloading". It also records server
+restarts after edits to .env.local. These are confirmed development reloads and
+plausible flash triggers, but the transcript has not been aligned with 00:05 in
+the video. Do not assign the observed black frame to either event yet.
+
 ## Run the check on Windows
 
 Keep the intended development server running in one PowerShell window. In a

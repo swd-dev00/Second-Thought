@@ -34,6 +34,8 @@ try {
     });
     const errors = [];
     const hotUpdates = [];
+    let documentLoads = 0;
+    page.on("domcontentloaded", () => documentLoads++);
     page.on("pageerror", (error) => errors.push(error.message.slice(0, 300)));
     page.on("console", (message) => {
       if (message.text().includes("[vite] hot updated")) hotUpdates.push(message.text());
@@ -109,6 +111,7 @@ try {
       missingHeadingSamples: afterPaint.filter((sample) => !sample.h1),
       errors,
       hotUpdates,
+      documentLoads,
     });
     await page.close();
   }
@@ -120,6 +123,7 @@ try {
     assert.equal(report.status, 200);
     assert.notEqual(report.firstVisibleMs, null);
     assert.deepEqual(report.hotUpdates, [], "HMR makes this run unsuitable for flash diagnosis.");
+    assert.equal(report.documentLoads, 1, "A full reload makes this run unstable.");
     assert.deepEqual(report.errors, []);
     assert.deepEqual(report.emptyMainSamples, []);
     assert.deepEqual(report.missingHeadingSamples, []);
