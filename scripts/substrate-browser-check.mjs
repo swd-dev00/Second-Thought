@@ -208,10 +208,7 @@ try {
         headers: { "x-tss-serialized": "true" },
         body: response({
           ok: true,
-          results:
-            tavilyMode === "results"
-              ? [{ title: "Test evidence", url: "https://example.com/evidence" }]
-              : [],
+          resultCount: tavilyMode === "results" ? 1 : 0,
         }),
       });
     } else await route.continue();
@@ -280,14 +277,17 @@ try {
   await page.locator("#lightning-result").getByText("calibration holds", { exact: true }).waitFor();
   passed("Mocked inference and transport failures with retry recovery");
   await tavilyButton.click();
-  await page.locator("#tavily-result").getByText("Test evidence", { exact: true }).waitFor();
+  await page
+    .locator("#tavily-result")
+    .getByText("Tavily connection verified. The test search returned 1 result.", { exact: true })
+    .waitFor();
   tavilyMode = "empty";
   await tavilyButton.click();
   await page
     .locator("#tavily-result")
     .getByText("No results were returned", { exact: false })
     .waitFor();
-  passed("Mocked search success and empty result");
+  passed("Mocked search connection receipt and truthful empty result");
   statusUnavailable = true;
   await page.reload({ waitUntil: "networkidle" });
   await page.getByText("Status unavailable", { exact: true }).first().waitFor();
