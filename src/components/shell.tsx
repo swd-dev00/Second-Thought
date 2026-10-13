@@ -14,14 +14,23 @@ export function Shell({
   variant = "default",
 }: {
   children: ReactNode;
-  variant?: "default" | "substrate";
+  variant?: "default" | "substrate" | "bench";
 }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const substrate = variant === "substrate";
+  const styled = substrate || variant === "bench";
 
   return (
-    <div className={substrate ? "substrate-shell" : "min-h-screen bg-ink text-fg"}>
-      {substrate && (
+    <div
+      className={
+        styled
+          ? substrate
+            ? "substrate-shell"
+            : "substrate-shell bench-shell"
+          : "min-h-screen bg-ink text-fg"
+      }
+    >
+      {styled && (
         <a className="substrate-skip-link" href="#substrate-content">
           Skip to content
         </a>
@@ -40,8 +49,8 @@ export function Shell({
               : "mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3"
           }
         >
-          <Link to="/" className={substrate ? "substrate-wordmark" : "min-w-0"}>
-            {substrate ? (
+          <Link to="/" className={styled ? "substrate-wordmark" : "min-w-0"}>
+            {styled ? (
               <>
                 <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
                   <path
@@ -69,7 +78,7 @@ export function Shell({
             )}
           </Link>
           <nav
-            className={substrate ? "substrate-nav-links" : "flex flex-wrap gap-2"}
+            className={styled ? "substrate-nav-links" : "flex flex-wrap gap-2"}
             aria-label="Main navigation"
           >
             {LINKS.map((link) => {
@@ -80,8 +89,8 @@ export function Shell({
                   to={link.to}
                   aria-current={active ? "page" : undefined}
                   className={clsx(
-                    substrate ? "substrate-nav-link" : "inline-flex h-11 items-center px-3 text-sm",
-                    substrate
+                    styled ? "substrate-nav-link" : "inline-flex h-11 items-center px-3 text-sm",
+                    styled
                       ? active && "is-current"
                       : active
                         ? "bg-amber text-ink"
@@ -93,16 +102,20 @@ export function Shell({
               );
             })}
           </nav>
-          {substrate && (
-            <a className="substrate-nav-action" href="#connections">
-              Check connections <ArrowUpRight size={14} aria-hidden="true" />
+          {styled && (
+            <a
+              className="substrate-nav-action"
+              href={substrate ? "#connections" : "#bench-workbench"}
+            >
+              {substrate ? "Check connections" : "Enter the replay"}{" "}
+              <ArrowUpRight size={14} aria-hidden="true" />
             </a>
           )}
         </div>
       </header>
       <main
-        id={substrate ? "substrate-content" : undefined}
-        className={substrate ? "substrate-main" : "mx-auto max-w-7xl px-4 py-6"}
+        id={styled ? "substrate-content" : undefined}
+        className={styled ? "substrate-main" : "mx-auto max-w-7xl px-4 py-6"}
       >
         {children}
       </main>

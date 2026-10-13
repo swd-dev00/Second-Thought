@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { clsx } from "clsx";
+import { ArrowUpRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { BenchHero } from "@/components/bench-hero";
 import { CANONICAL } from "@/lib/nmm/trials";
 import { runTrial } from "@/lib/nmm/engine";
 import { substrateStatus } from "@/lib/nmm/probe";
@@ -24,8 +27,10 @@ function latestRead(events: TraceEvent[]) {
 }
 
 function policyOf(trialId: string): string {
-  if (trialId === "berth-7") return "Escalate through the model family when deeper reasoning and new evidence can materially change the answer.";
-  if (trialId === "yield-440") return "Stop when the evidence cannot discriminate and more inference cannot resolve the uncertainty.";
+  if (trialId === "berth-7")
+    return "Escalate through the model family when deeper reasoning and new evidence can materially change the answer.";
+  if (trialId === "yield-440")
+    return "Stop when the evidence cannot discriminate and more inference cannot resolve the uncertainty.";
   return "Stay on Lightning when the evidence is already sufficient to commit.";
 }
 
@@ -35,12 +40,17 @@ export function Bench() {
   const [playing, setPlaying] = useState(true);
   const [playhead, setPlayhead] = useState(0);
   const [runtime, setRuntime] = useState<{ tokenFactory: boolean; tavily: boolean } | null>(null);
-  const run = useMemo(() => runTrial(CANONICAL.find((trial) => trial.id === trialId) ?? CANONICAL[0]!), [trialId]);
+  const run = useMemo(
+    () => runTrial(CANONICAL.find((trial) => trial.id === trialId) ?? CANONICAL[0]!),
+    [trialId],
+  );
   const end = endOf(run);
   const done = playhead >= end - 1;
 
   useEffect(() => {
-    substrateStatus().then(setRuntime).catch(() => setRuntime({ tokenFactory: false, tavily: false }));
+    substrateStatus()
+      .then(setRuntime)
+      .catch(() => setRuntime({ tokenFactory: false, tavily: false }));
   }, []);
 
   useEffect(() => {
@@ -80,7 +90,9 @@ export function Bench() {
   const outside = run.trial.evidence.filter((item) => item.availability === "retrievable").length;
 
   const jump = (dir: 1 | -1) => {
-    const marks = [...run.baseline.events, ...run.regulated.events].map((event) => event.t).sort((a, b) => a - b);
+    const marks = [...run.baseline.events, ...run.regulated.events]
+      .map((event) => event.t)
+      .sort((a, b) => a - b);
     if (dir > 0) {
       const next = marks.find((mark) => mark > playhead + 8);
       setPlayhead(next ?? end);
@@ -92,147 +104,242 @@ export function Bench() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="border-b border-line pb-6">
-        <div className="max-w-4xl">
-          <p className="text-xs tracking-[0.24em] text-amber uppercase">Second Thought · Powered by NMM</p>
-          <h1 className="mt-3 font-display text-4xl leading-[0.98] text-fg sm:text-6xl">
-            Second Thought is a cognitive runtime.
-          </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted sm:text-base">
-            NMM watches observable evidence and inference conditions. CCG measures when the current reasoning state is poorly calibrated to the problem. MRL decides whether to continue, challenge, acquire evidence, change model tier, commit, or stop.
-          </p>
+    <div className="bench-experience">
+      <BenchHero
+        run={run}
+        events={regEvents}
+        progress={playhead / end}
+        complete={done}
+        onRun={() => {
+          setTrialId("berth-7");
+          setPlayhead(0);
+          setPlaying(true);
+          document.getElementById("bench-workbench")?.scrollIntoView({
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? "auto"
+              : "smooth",
+          });
+        }}
+      />
+      <div className="bench-content">
+        <div className="bench-live-strip">
+          <RuntimeStrip status={runtime} />
         </div>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className="h-12 bg-amber px-5 text-sm font-medium text-ink"
-            onClick={() => { setTrialId("berth-7"); setPlayhead(0); setPlaying(true); }}
-          >
-            Run Berth 7
-          </button>
-          <span className="text-xs text-muted">Same model family. Different cognitive allocation. Determined at runtime.</span>
-        </div>
-        <RuntimeStrip status={runtime} />
-        <section className="mt-3 grid gap-px border border-line bg-line sm:grid-cols-3">
-          <div className="bg-ink px-3 py-3">
-            <p className="text-[11px] tracking-widest text-muted uppercase">Berth 7</p>
-            <p className="mt-1 text-sm text-fg">Escalates through the model family.</p>
+        <section className="bench-chapters" aria-labelledby="bench-trials-heading">
+          <div className="bench-chapters-head">
+            <div>
+              <span className="bench-chapters-kicker">
+                THREE TRIALS / THREE REGULATORY DECISIONS
+              </span>
+              <h2 id="bench-trials-heading">Intelligence should know when.</h2>
+            </div>
+            <p>
+              Escalate when new evidence can change the answer. Stop when it cannot. Stay small when
+              it is enough.
+            </p>
           </div>
-          <div className="bg-ink px-3 py-3">
-            <p className="text-[11px] tracking-widest text-muted uppercase">Run 440</p>
-            <p className="mt-1 text-sm text-fg">Stops when evidence cannot discriminate.</p>
-          </div>
-          <div className="bg-ink px-3 py-3">
-            <p className="text-[11px] tracking-widest text-muted uppercase">Door 2</p>
-            <p className="mt-1 text-sm text-fg">Stays on Lightning when the evidence is sufficient.</p>
+          <div className="bench-chapter-grid">
+            {CANONICAL.map((trial, index) => (
+              <button
+                key={trial.id}
+                type="button"
+                className={clsx("bench-chapter", trial.id === trialId && "is-active")}
+                onClick={() => {
+                  setTrialId(trial.id);
+                  document.getElementById("bench-workbench")?.scrollIntoView({
+                    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                      ? "auto"
+                      : "smooth",
+                  });
+                }}
+                aria-pressed={trial.id === trialId}
+              >
+                <span className="bench-chapter-index">
+                  0{index + 1} / {trial.kicker}
+                </span>
+                <strong>{trial.title}</strong>
+                <small>{policyOf(trial.id)}</small>
+                <ArrowUpRight size={18} aria-hidden="true" />
+              </button>
+            ))}
           </div>
         </section>
-      </section>
-
-      <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
-        {CANONICAL.map((trial) => (
-          <TrialButton key={trial.id} active={trial.id === trialId} onClick={() => setTrialId(trial.id)} kicker={trial.kicker} title={trial.title} />
-        ))}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <aside className="hidden lg:flex lg:flex-col lg:gap-2">
-          {CANONICAL.map((trial) => (
-            <TrialButton key={trial.id} active={trial.id === trialId} onClick={() => setTrialId(trial.id)} kicker={trial.kicker} title={trial.title} />
-          ))}
-          <p className="mt-3 text-xs leading-relaxed text-muted">
-            Closed-world stress trials. Ground truth is sealed until both arms finish. Numbers are the harness, not a slide.
-          </p>
-        </aside>
-
-        <div className="flex min-w-0 flex-col gap-4">
-          <section className="border border-line bg-panel p-4">
-            <p className="text-xs tracking-widest text-muted uppercase">{run.trial.kicker}</p>
-            <h2 className="mt-2 font-display text-2xl text-fg">{run.trial.title}</h2>
-            <p className="mt-2 font-display text-xl text-fg">{run.trial.question}</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{run.trial.brief}</p>
-            <div className="mt-4 border-l-2 border-amber pl-3">
-              <p className="text-[11px] tracking-widest text-muted uppercase">NMM allocation policy</p>
-              <p className="mt-1 text-sm text-fg">{policyOf(run.trial.id)}</p>
+        <section
+          id="bench-workbench"
+          className="bench-workbench"
+          aria-labelledby="bench-workbench-heading"
+        >
+          <div className="bench-workbench-head">
+            <div>
+              <span className="bench-workbench-kicker">THE RUNTIME / INTERACTIVE REPLAY</span>
+              <h2 id="bench-workbench-heading">Watch the intervention.</h2>
             </div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {initial.map((item) => (
-                <article key={item.id} className="border border-line bg-ink px-3 py-2">
-                  <p className="text-xs text-amber">{item.source}</p>
-                  <p className="mt-1 text-sm text-fg">{item.text}</p>
-                  <p className="mt-1 text-xs text-muted">Age {item.ageDays}d</p>
-                </article>
+            <p>
+              Two reasoning paths. One evidence packet. Follow the actual controller trace, then
+              inspect the verdict.
+            </p>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+            {CANONICAL.map((trial) => (
+              <TrialButton
+                key={trial.id}
+                active={trial.id === trialId}
+                onClick={() => setTrialId(trial.id)}
+                kicker={trial.kicker}
+                title={trial.title}
+              />
+            ))}
+          </div>
+
+          <div className="bench-playback-layout grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
+            <aside className="bench-playback-side hidden lg:flex lg:flex-col lg:gap-2">
+              {CANONICAL.map((trial) => (
+                <TrialButton
+                  key={trial.id}
+                  active={trial.id === trialId}
+                  onClick={() => setTrialId(trial.id)}
+                  kicker={trial.kicker}
+                  title={trial.title}
+                />
               ))}
-            </div>
-            {outside > 0 ? (
-              <p className="mt-3 text-xs text-muted">
-                {outside} observation{outside === 1 ? "" : "s"} stay outside the packet until the regulatory layer asks for them.
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                Closed-world stress trials. Ground truth is sealed until both arms finish. Numbers
+                are the harness, not a slide.
               </p>
-            ) : (
-              <p className="mt-3 text-xs text-muted">Nothing outside this packet can separate the hypotheses.</p>
-            )}
-          </section>
+            </aside>
 
-          <div className="h-1 overflow-hidden bg-panel">
-            <div className="h-full bg-amber transition-[width] duration-150" style={{ width: `${Math.min(100, (playhead / end) * 100)}%` }} />
-          </div>
+            <div className="flex min-w-0 flex-col gap-4">
+              <section className="bench-packet border border-line bg-panel p-4">
+                <p className="text-xs tracking-widest text-muted uppercase">{run.trial.kicker}</p>
+                <h2 className="mt-2 font-display text-2xl text-fg">{run.trial.title}</h2>
+                <p className="mt-2 font-display text-xl text-fg">{run.trial.question}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{run.trial.brief}</p>
+                <div className="mt-4 border-l-2 border-amber pl-3">
+                  <p className="text-[11px] tracking-widest text-muted uppercase">
+                    NMM allocation policy
+                  </p>
+                  <p className="mt-1 text-sm text-fg">{policyOf(run.trial.id)}</p>
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {initial.map((item) => (
+                    <article key={item.id} className="border border-line bg-ink px-3 py-2">
+                      <p className="text-xs text-amber">{item.source}</p>
+                      <p className="mt-1 text-sm text-fg">{item.text}</p>
+                      <p className="mt-1 text-xs text-muted">Age {item.ageDays}d</p>
+                    </article>
+                  ))}
+                </div>
+                {outside > 0 ? (
+                  <p className="mt-3 text-xs text-muted">
+                    {outside} observation{outside === 1 ? "" : "s"} stay outside the packet until
+                    the regulatory layer asks for them.
+                  </p>
+                ) : (
+                  <p className="mt-3 text-xs text-muted">
+                    Nothing outside this packet can separate the hypotheses.
+                  </p>
+                )}
+              </section>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className="h-11 bg-amber px-4 text-sm text-ink" onClick={() => { setPlayhead(0); setPlaying(true); }}>
-              {done ? "Replay" : playing ? "Restart" : "Play"}
-            </button>
-            <button type="button" className="h-11 border border-line px-4 text-sm" onClick={() => setPlaying((value) => !value)}>
-              {playing && !done ? "Pause" : "Resume"}
-            </button>
-            <button type="button" className="h-11 border border-line px-3 text-sm" onClick={() => jump(-1)} aria-label="Step back">
-              Step back
-            </button>
-            <button type="button" className="h-11 border border-line px-3 text-sm" onClick={() => jump(1)} aria-label="Step forward">
-              Step
-            </button>
-            <div className="flex h-11 border border-line">
-              {SPEEDS.map((value) => (
+              <div className="bench-progress-track h-1 overflow-hidden bg-panel">
+                <div
+                  className="bench-progress-fill h-full bg-amber transition-[width] duration-150"
+                  style={{ width: `${Math.min(100, (playhead / end) * 100)}%` }}
+                />
+              </div>
+
+              <div className="bench-toolbar flex flex-wrap items-center gap-2">
                 <button
-                  key={value}
                   type="button"
-                  className={clsx("px-3 text-sm", speed === value ? "bg-paper text-ink" : "text-muted")}
-                  onClick={() => setSpeed(value)}
+                  className="h-11 bg-amber px-4 text-sm text-ink"
+                  onClick={() => {
+                    setPlayhead(0);
+                    setPlaying(true);
+                  }}
                 >
-                  {value}×
+                  {done ? "Replay" : playing ? "Restart" : "Play"}
                 </button>
-              ))}
+                <button
+                  type="button"
+                  className="h-11 border border-line px-4 text-sm"
+                  onClick={() => setPlaying((value) => !value)}
+                >
+                  {playing && !done ? "Pause" : "Resume"}
+                </button>
+                <button
+                  type="button"
+                  className="h-11 border border-line px-3 text-sm"
+                  onClick={() => jump(-1)}
+                  aria-label="Step back"
+                >
+                  Step back
+                </button>
+                <button
+                  type="button"
+                  className="h-11 border border-line px-3 text-sm"
+                  onClick={() => jump(1)}
+                  aria-label="Step forward"
+                >
+                  Step
+                </button>
+                <div className="flex h-11 border border-line">
+                  {SPEEDS.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={clsx(
+                        "px-3 text-sm",
+                        speed === value ? "bg-paper text-ink" : "text-muted",
+                      )}
+                      onClick={() => setSpeed(value)}
+                    >
+                      {value}×
+                    </button>
+                  ))}
+                </div>
+                <p className="ml-auto text-xs text-muted tabular-nums">
+                  {done ? "Trace complete" : "Running"}
+                </p>
+              </div>
+
+              <InterventionRail events={regEvents} />
+
+              <div className="bench-comparison grid gap-3 lg:grid-cols-2">
+                <Pane
+                  tone="baseline"
+                  kicker="Baseline"
+                  title={TIERS.ultra.name}
+                  detail="Unregulated monologue. Salience anchoring. No retrieval. No abstention."
+                  events={baseEvents}
+                  liveTier="ultra"
+                />
+                <Pane
+                  tone="regulated"
+                  kicker="Second Thought"
+                  title="Regulated Nemotron"
+                  detail="CCG from observable signals. MRL chooses the tier, the tool, or the stop."
+                  events={regEvents}
+                  liveTier={read && read.type === "read" ? read.tier : "lightning"}
+                />
+              </div>
+
+              {done ? <OutcomeSplit run={run} /> : null}
+              {done ? <CaseMechanism run={run} /> : null}
+
+              <Instrument
+                read={read && read.type === "read" ? read : null}
+                history={reads.flatMap((event) => (event.type === "read" ? [event.ccg] : []))}
+              />
+
+              {done ? <Verdict run={run} /> : null}
             </div>
-            <p className="ml-auto text-xs text-muted tabular-nums">{done ? "Trace complete" : "Running"}</p>
           </div>
-
-          <InterventionRail events={regEvents} />
-
-          <div className="grid gap-3 lg:grid-cols-2">
-            <Pane
-              tone="baseline"
-              kicker="Baseline"
-              title={TIERS.ultra.name}
-              detail="Unregulated monologue. Salience anchoring. No retrieval. No abstention."
-              events={baseEvents}
-              liveTier="ultra"
-            />
-            <Pane
-              tone="regulated"
-              kicker="Second Thought"
-              title="Regulated Nemotron"
-              detail="CCG from observable signals. MRL chooses the tier, the tool, or the stop."
-              events={regEvents}
-              liveTier={read && read.type === "read" ? read.tier : "lightning"}
-            />
-          </div>
-
-          {done ? <OutcomeSplit run={run} /> : null}
-          {done ? <CaseMechanism run={run} /> : null}
-
-          <Instrument read={read && read.type === "read" ? read : null} history={reads.flatMap((event) => (event.type === "read" ? [event.ccg] : []))} />
-
-          {done ? <Verdict run={run} /> : null}
+        </section>
+        <div className="bench-workbench-tail">
+          <p>TRIAL REPLAY / NMM · CCG · MRL / NO FABRICATED LIVE TELEMETRY</p>
+          <Link to="/substrate">
+            Inspect the substrate <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </div>
@@ -242,8 +349,16 @@ export function Bench() {
 function RuntimeStrip({ status }: { status: { tokenFactory: boolean; tavily: boolean } | null }) {
   const cells = [
     { label: "NMM controller", value: "ACTIVE", active: true },
-    { label: "Nebius Token Factory", value: status === null ? "CHECKING" : status.tokenFactory ? "ARMED" : "KEY NEEDED", active: Boolean(status?.tokenFactory) },
-    { label: "Tavily acquisition", value: status === null ? "CHECKING" : status.tavily ? "ARMED" : "KEY NEEDED", active: Boolean(status?.tavily) },
+    {
+      label: "Nebius Token Factory",
+      value: status === null ? "CHECKING" : status.tokenFactory ? "ARMED" : "KEY NEEDED",
+      active: Boolean(status?.tokenFactory),
+    },
+    {
+      label: "Tavily acquisition",
+      value: status === null ? "CHECKING" : status.tavily ? "ARMED" : "KEY NEEDED",
+      active: Boolean(status?.tavily),
+    },
   ];
 
   return (
@@ -251,7 +366,14 @@ function RuntimeStrip({ status }: { status: { tokenFactory: boolean; tavily: boo
       {cells.map((cell) => (
         <div key={cell.label} className="flex items-center justify-between gap-3 bg-ink px-3 py-2">
           <span className="text-[11px] text-muted">{cell.label}</span>
-          <span className={clsx("text-[11px] tracking-wider", cell.active ? "text-amber" : "text-muted")}>{cell.value}</span>
+          <span
+            className={clsx(
+              "text-[11px] tracking-wider",
+              cell.active ? "text-amber" : "text-muted",
+            )}
+          >
+            {cell.value}
+          </span>
         </div>
       ))}
     </div>
@@ -259,7 +381,12 @@ function RuntimeStrip({ status }: { status: { tokenFactory: boolean; tavily: boo
 }
 
 type CaseMechanismCopy = { title: string; lead: string; items: Array<readonly [string, string]> };
-type InterventionStep = { key: string; label: string; detail: string; tone: "read" | "action" | "terminal" };
+type InterventionStep = {
+  key: string;
+  label: string;
+  detail: string;
+  tone: "read" | "action" | "terminal";
+};
 
 function CaseMechanism({ run }: { run: TrialRun }) {
   const copy: CaseMechanismCopy =
@@ -268,10 +395,22 @@ function CaseMechanism({ run }: { run: TrialRun }) {
           title: "Why Second Thought changed course",
           lead: "The first answer was plausible, but the evidence did not support committing to it.",
           items: [
-            ["Challenge", "The labor story depended on a stale, high-salience bulletin that conflicted with current gate activity."],
-            ["Acquire", "The packet could not separate crane failure from a customs hold, so NMM requested the missing observations."],
-            ["Allocate", "The surviving hypotheses still competed, so cognition moved up the Nemotron stack only as needed."],
-            ["Commit", "The combined commodity and berth evidence separated the targeted exam hypothesis."],
+            [
+              "Challenge",
+              "The labor story depended on a stale, high-salience bulletin that conflicted with current gate activity.",
+            ],
+            [
+              "Acquire",
+              "The packet could not separate crane failure from a customs hold, so NMM requested the missing observations.",
+            ],
+            [
+              "Allocate",
+              "The surviving hypotheses still competed, so cognition moved up the Nemotron stack only as needed.",
+            ],
+            [
+              "Commit",
+              "The combined commodity and berth evidence separated the targeted exam hypothesis.",
+            ],
           ],
         }
       : run.trial.id === "yield-440"
@@ -280,9 +419,18 @@ function CaseMechanism({ run }: { run: TrialRun }) {
             lead: "The available observations support both causes. More reasoning cannot manufacture the missing experiment.",
             items: [
               ["Detect", "The competing hypotheses remain symmetric under the available evidence."],
-              ["Stop", "NMM recognizes that another model pass cannot resolve an information deficit."],
-              ["Name the gap", "The system identifies the discriminating control needed before a causal answer is warranted."],
-              ["Halt", "Abstention is the correct outcome because the evidence is underdetermined."],
+              [
+                "Stop",
+                "NMM recognizes that another model pass cannot resolve an information deficit.",
+              ],
+              [
+                "Name the gap",
+                "The system identifies the discriminating control needed before a causal answer is warranted.",
+              ],
+              [
+                "Halt",
+                "Abstention is the correct outcome because the evidence is underdetermined.",
+              ],
             ],
           }
         : {
@@ -316,7 +464,14 @@ function CaseMechanism({ run }: { run: TrialRun }) {
 function InterventionRail({ events }: { events: TraceEvent[] }) {
   const steps: InterventionStep[] = events.flatMap((event): InterventionStep[] => {
     if (event.type === "read") {
-      return [{ key: `read-${event.t}`, label: TIERS[event.tier].short, detail: `CCG ${ccg(event.ccg)}`, tone: "read" as const }];
+      return [
+        {
+          key: `read-${event.t}`,
+          label: TIERS[event.tier].short,
+          detail: `CCG ${ccg(event.ccg)}`,
+          tone: "read" as const,
+        },
+      ];
     }
     if (event.type === "action") {
       const label =
@@ -327,30 +482,70 @@ function InterventionRail({ events }: { events: TraceEvent[] }) {
             : event.action === "escalate"
               ? `ESCALATE → ${TIERS[event.tier].short}`
               : "DE-ESCALATE";
-      return [{ key: `${event.action}-${event.t}`, label, detail: event.title, tone: "action" as const }];
+      return [
+        { key: `${event.action}-${event.t}`, label, detail: event.title, tone: "action" as const },
+      ];
     }
     if (event.type === "halt") {
-      return [{ key: `halt-${event.t}`, label: "HALT", detail: "Evidence cannot discriminate", tone: "terminal" as const }];
+      return [
+        {
+          key: `halt-${event.t}`,
+          label: "HALT",
+          detail: "Evidence cannot discriminate",
+          tone: "terminal" as const,
+        },
+      ];
     }
     if (event.type === "commit") {
-      return [{ key: `commit-${event.t}`, label: "COMMIT", detail: event.label, tone: "terminal" as const }];
+      return [
+        {
+          key: `commit-${event.t}`,
+          label: "COMMIT",
+          detail: event.label,
+          tone: "terminal" as const,
+        },
+      ];
     }
     return [];
   });
 
   return (
-    <section className="border border-line bg-ink p-3">
+    <section className="bench-recorder border border-line bg-ink p-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs tracking-widest text-muted uppercase">Cognitive flight recorder</p>
-        <p className="text-xs text-muted">{steps.length ? "NMM intervention path" : "Awaiting first read"}</p>
+        <p className="text-xs text-muted">
+          {steps.length ? "NMM intervention path" : "Awaiting first read"}
+        </p>
       </div>
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-        {steps.length === 0 ? <span className="text-sm text-muted">LIGHTNING will read the incident first.</span> : null}
+        {steps.length === 0 ? (
+          <span className="text-sm text-muted">LIGHTNING will read the incident first.</span>
+        ) : null}
         {steps.map((step, index) => (
           <div key={step.key} className="flex shrink-0 items-center gap-2">
             {index > 0 ? <span className="text-muted">→</span> : null}
-            <div className={clsx("min-w-28 border px-3 py-2", step.tone === "action" ? "border-amber bg-panel-2" : step.tone === "terminal" ? "border-oxide bg-panel" : "border-line bg-panel")}>
-              <p className={clsx("text-xs tracking-wider uppercase", step.tone === "action" ? "text-amber" : step.tone === "terminal" ? "text-oxide" : "text-fg")}>{step.label}</p>
+            <div
+              className={clsx(
+                "min-w-28 border px-3 py-2",
+                step.tone === "action"
+                  ? "border-amber bg-panel-2"
+                  : step.tone === "terminal"
+                    ? "border-oxide bg-panel"
+                    : "border-line bg-panel",
+              )}
+            >
+              <p
+                className={clsx(
+                  "text-xs tracking-wider uppercase",
+                  step.tone === "action"
+                    ? "text-amber"
+                    : step.tone === "terminal"
+                      ? "text-oxide"
+                      : "text-fg",
+                )}
+              >
+                {step.label}
+              </p>
               <p className="mt-1 text-[11px] text-muted">{step.detail}</p>
             </div>
           </div>
@@ -361,23 +556,45 @@ function InterventionRail({ events }: { events: TraceEvent[] }) {
 }
 
 function OutcomeSplit({ run }: { run: TrialRun }) {
-  const baselineLabel = run.baseline.outcome === "abstained" ? "ABSTAINED" : run.baseline.correct ? "CORRECT" : "WRONG";
-  const regulatedLabel = run.regulated.outcome === "abstained" ? "CORRECT HALT" : run.regulated.correct ? "CORRECT" : "WRONG";
+  const baselineLabel =
+    run.baseline.outcome === "abstained" ? "ABSTAINED" : run.baseline.correct ? "CORRECT" : "WRONG";
+  const regulatedLabel =
+    run.regulated.outcome === "abstained"
+      ? "CORRECT HALT"
+      : run.regulated.correct
+        ? "CORRECT"
+        : "WRONG";
 
   return (
     <section className="grid overflow-hidden border border-line lg:grid-cols-2">
       <article className="bg-panel p-5 lg:border-r lg:border-line">
         <p className="text-xs tracking-[0.2em] text-muted uppercase">Ultra only</p>
         <p className="mt-3 font-display text-4xl text-fg sm:text-5xl">{run.baseline.answerLabel}</p>
-        <p className={clsx("mt-2 text-sm font-medium tracking-widest", run.baseline.correct ? "text-amber" : "text-oxide")}>{baselineLabel}</p>
+        <p
+          className={clsx(
+            "mt-2 text-sm font-medium tracking-widest",
+            run.baseline.correct ? "text-amber" : "text-oxide",
+          )}
+        >
+          {baselineLabel}
+        </p>
         <p className="mt-4 text-xs leading-relaxed text-muted">
           One large model, one reasoning path, no retrieval decision, no epistemic stop.
         </p>
       </article>
       <article className="bg-ink p-5">
         <p className="text-xs tracking-[0.2em] text-amber uppercase">Second Thought</p>
-        <p className="mt-3 font-display text-4xl text-fg sm:text-5xl">{run.regulated.answerLabel}</p>
-        <p className={clsx("mt-2 text-sm font-medium tracking-widest", run.regulated.correct ? "text-amber" : "text-oxide")}>{regulatedLabel}</p>
+        <p className="mt-3 font-display text-4xl text-fg sm:text-5xl">
+          {run.regulated.answerLabel}
+        </p>
+        <p
+          className={clsx(
+            "mt-2 text-sm font-medium tracking-widest",
+            run.regulated.correct ? "text-amber" : "text-oxide",
+          )}
+        >
+          {regulatedLabel}
+        </p>
         <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
           <div>
             <p className="text-muted">MRL interventions</p>
@@ -393,7 +610,17 @@ function OutcomeSplit({ run }: { run: TrialRun }) {
   );
 }
 
-function TrialButton({ active, onClick, kicker, title }: { active: boolean; onClick: () => void; kicker: string; title: string }) {
+function TrialButton({
+  active,
+  onClick,
+  kicker,
+  title,
+}: {
+  active: boolean;
+  onClick: () => void;
+  kicker: string;
+  title: string;
+}) {
   return (
     <button
       type="button"
@@ -425,21 +652,33 @@ function Pane({
   liveTier: "lightning" | "super" | "ultra";
 }) {
   return (
-    <section className={clsx("flex min-w-0 flex-col border bg-panel", tone === "regulated" ? "border-amber" : "border-line")}>
+    <section
+      className={clsx(
+        "flex min-w-0 flex-col border bg-panel",
+        tone === "regulated" ? "border-amber" : "border-line",
+      )}
+    >
       <header className="border-b border-line px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs tracking-widest text-muted uppercase">{kicker}</p>
             <h3 className="mt-1 font-display text-xl text-fg">{title}</h3>
           </div>
-          <span className={clsx("shrink-0 px-2 py-1 text-xs", tone === "regulated" ? "bg-amber text-ink" : "border border-line text-muted")}>
+          <span
+            className={clsx(
+              "shrink-0 px-2 py-1 text-xs",
+              tone === "regulated" ? "bg-amber text-ink" : "border border-line text-muted",
+            )}
+          >
             {TIERS[liveTier].short}
           </span>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
       </header>
       <div className="flex max-h-96 flex-col gap-3 overflow-y-auto px-4 py-3">
-        {events.length === 0 ? <p className="text-sm text-muted">Waiting for the first read.</p> : null}
+        {events.length === 0 ? (
+          <p className="text-sm text-muted">Waiting for the first read.</p>
+        ) : null}
         {events.map((event, index) => (
           <EventRow key={`${event.type}-${event.t}-${index}`} event={event} />
         ))}
@@ -462,7 +701,9 @@ function EventRow({ event }: { event: TraceEvent }) {
   if (event.type === "read") {
     return (
       <article className="border-l border-amber pl-3">
-        <p className="text-xs text-amber tabular-nums">CCG {ccg(event.ccg)} · {TIERS[event.tier].short}</p>
+        <p className="text-xs text-amber tabular-nums">
+          CCG {ccg(event.ccg)} · {TIERS[event.tier].short}
+        </p>
         <p className="mt-1 text-sm text-fg">{event.text}</p>
       </article>
     );
@@ -480,12 +721,16 @@ function EventRow({ event }: { event: TraceEvent }) {
       <article className="border border-oxide bg-ink px-3 py-3">
         <p className="text-xs tracking-widest text-oxide uppercase">Epistemic halt</p>
         <p className="mt-2 font-display text-lg text-fg">{event.text}</p>
-        <p className="mt-2 text-sm text-paper">The observation that would resolve it: {event.missing}</p>
+        <p className="mt-2 text-sm text-paper">
+          The observation that would resolve it: {event.missing}
+        </p>
       </article>
     );
   }
   return (
-    <article className={clsx("px-3 py-2", event.correct ? "bg-amber text-ink" : "bg-oxide text-ink")}>
+    <article
+      className={clsx("px-3 py-2", event.correct ? "bg-amber text-ink" : "bg-oxide text-ink")}
+    >
       <p className="text-xs tracking-widest uppercase">{event.correct ? "Correct" : "Wrong"}</p>
       <p className="mt-1 text-sm">{event.text}</p>
       <p className="mt-1 text-xs tabular-nums">Confidence {pct(event.confidence)}</p>
@@ -506,14 +751,21 @@ function Instrument({
       <div className="grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
         <div>
           <p className="text-xs tracking-widest text-muted uppercase">Cognitive calibration gap</p>
-          <p className="mt-1 font-display text-6xl text-amber italic tabular-nums">{read ? ccg(read.ccg) : "—"}</p>
+          <p className="mt-1 font-display text-6xl text-amber italic tabular-nums">
+            {read ? ccg(read.ccg) : "—"}
+          </p>
           <p className="mt-1 text-xs text-muted">Observable. Not a hidden mental state.</p>
         </div>
         <div className="min-w-0">
           <Spark values={history} />
           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
             {WEIGHTS.map((item) => (
-              <SignalBar key={item.key} label={item.label} weight={item.w} value={signals ? signals[item.key as keyof Signals] : 0} />
+              <SignalBar
+                key={item.key}
+                label={item.label}
+                weight={item.w}
+                value={signals ? signals[item.key as keyof Signals] : 0}
+              />
             ))}
           </div>
         </div>
@@ -551,7 +803,12 @@ function Spark({ values }: { values: number[] }) {
     })
     .join(" ");
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-12 w-full" role="img" aria-label="Calibration gap over the trace">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-12 w-full"
+      role="img"
+      aria-label="Calibration gap over the trace"
+    >
       <path d={d} fill="none" stroke="var(--color-amber)" strokeWidth="2" />
     </svg>
   );
@@ -563,13 +820,20 @@ function Verdict({ run }: { run: TrialRun }) {
   const truth =
     run.trial.truth === "abstain"
       ? "No hypothesis is supported. The correct act is to stop and name the missing observation."
-      : (run.trial.hypotheses.find((item) => item.id === run.trial.truth)?.label ?? run.trial.truth);
+      : (run.trial.hypotheses.find((item) => item.id === run.trial.truth)?.label ??
+        run.trial.truth);
   return (
     <section className="border border-line bg-ink p-4">
       <p className="text-xs tracking-widest text-muted uppercase">Measured on this trace</p>
       <p className="mt-2 font-display text-2xl text-fg">Ground truth: {truth}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <StatBlock title="Baseline Ultra" result={base} extra={[{ label: "Confidence", value: base.confidence === null ? "—" : pct(base.confidence) }]} />
+        <StatBlock
+          title="Baseline Ultra"
+          result={base}
+          extra={[
+            { label: "Confidence", value: base.confidence === null ? "—" : pct(base.confidence) },
+          ]}
+        />
         <StatBlock
           title="Second Thought"
           result={reg}
@@ -595,7 +859,8 @@ function StatBlock({
   extra: { label: string; value: string }[];
   accent?: boolean;
 }) {
-  const resultLabel = result.outcome === "abstained" ? "Abstained" : result.correct ? "Correct" : "Wrong";
+  const resultLabel =
+    result.outcome === "abstained" ? "Abstained" : result.correct ? "Correct" : "Wrong";
   const rows = [
     { label: "Result", value: resultLabel },
     { label: "Answer", value: result.answerLabel },
@@ -612,7 +877,12 @@ function StatBlock({
         {rows.map((row) => (
           <div key={row.label}>
             <dt className="text-xs text-muted">{row.label}</dt>
-            <dd className={clsx("text-sm tabular-nums", row.label === "Result" ? (result.correct ? "text-amber" : "text-oxide") : "text-fg")}>
+            <dd
+              className={clsx(
+                "text-sm tabular-nums",
+                row.label === "Result" ? (result.correct ? "text-amber" : "text-oxide") : "text-fg",
+              )}
+            >
               {row.value}
             </dd>
           </div>
