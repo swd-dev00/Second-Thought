@@ -36,7 +36,48 @@ const MODEL_ROLES: Record<Tier, { label: string; description: string }> = {
   },
 };
 
+const RUNTIME_STEPS = [
+  {
+    id: "evidence",
+    label: "Evidence",
+    heading: "Read what is actually known.",
+    explanation:
+      "The controller starts with the supplied observations and tracks what is missing. A persuasive report is not automatically sufficient evidence.",
+    example: "Berth 7",
+    trial: "berth-7",
+  },
+  {
+    id: "calibration",
+    label: "Calibration",
+    heading: "Measure the gap before answering.",
+    explanation:
+      "NMM computes CCG from observable signals such as contradictions, coverage gaps, and competing hypotheses. It does not claim to inspect a model's hidden mental state.",
+    example: "Run 440",
+    trial: "yield-440",
+  },
+  {
+    id: "allocation",
+    label: "Allocation",
+    heading: "Choose the cognition the evidence warrants.",
+    explanation:
+      "MRL can keep Nemotron on Lightning, move to Super or Ultra, or request another observation. More inference is a decision, not the default.",
+    example: "Door 2",
+    trial: "door-2",
+  },
+  {
+    id: "judgment",
+    label: "Judgment",
+    heading: "Commit only when the case is supported.",
+    explanation:
+      "The runtime can commit a supported answer or stop and name the evidence still needed. A fluent unsupported conclusion does not count as resolution.",
+    example: "Run 440",
+    trial: "yield-440",
+  },
+] as const;
+
 export function SubstrateView() {
+  const [selectedRuntimeStep, setSelectedRuntimeStep] = useState(0);
+  const selectedStep = RUNTIME_STEPS[selectedRuntimeStep]!;
   const [status, setStatus] = useState<Status | null>(null);
   const [statusError, setStatusError] = useState(false);
   const [statusRevision, setStatusRevision] = useState(0);
@@ -150,6 +191,38 @@ export function SubstrateView() {
               <span>INPUT</span>
               <span>ALLOCATION, NOT AUTOPILOT</span>
             </div>
+            <div
+              className="substrate-runtime-tabs"
+              role="group"
+              aria-label="Explore the four stages of NMM"
+            >
+              {RUNTIME_STEPS.map((step, index) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  className={
+                    index === selectedRuntimeStep
+                      ? "substrate-runtime-tab is-selected"
+                      : "substrate-runtime-tab"
+                  }
+                  aria-pressed={index === selectedRuntimeStep}
+                  onClick={() => setSelectedRuntimeStep(index)}
+                >
+                  <span>0{index + 1}</span> {step.label}
+                </button>
+              ))}
+            </div>
+            <div className="substrate-runtime-inspect" aria-live="polite" aria-atomic="true">
+              <span className="substrate-micro-label">
+                SELECTED STAGE / 0{selectedRuntimeStep + 1}
+              </span>
+              <h3>{selectedStep.heading}</h3>
+              <p>{selectedStep.explanation}</p>
+              <a className="substrate-runtime-example" href={"/?trial=" + selectedStep.trial}>
+                Watch {selectedStep.example} demonstrate this{" "}
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </a>
+            </div>
             <div className="substrate-controller">
               <div>
                 <span className="substrate-micro-label">Regulatory layer</span>
@@ -180,21 +253,26 @@ export function SubstrateView() {
             <div className="substrate-pass-tear" aria-hidden="true" />
             <div className="substrate-pass-status" aria-live="polite">
               <div>
-                <span className="substrate-micro-label">Inference connection</span>
+                <span className="substrate-micro-label">Inference API credential</span>
                 <span className="substrate-status-value">
                   <span className="substrate-connection-dot" />
                   {statusError
                     ? "Status unavailable"
                     : status
                       ? status.tokenFactory
-                        ? "Key present"
+                        ? "Key configured"
                         : "Key needed"
-                      : "Checking connection"}
+                      : "Checking configuration"}
                 </span>
               </div>
-              <span className="substrate-barcode" aria-hidden="true" />
+              <a className="substrate-pass-test-link" href="#connections">
+                Test providers <ArrowUpRight size={14} aria-hidden="true" />
+              </a>
             </div>
-            <p className="substrate-pass-footnote">The local harness runs without API keys.</p>
+            <p className="substrate-pass-footnote">
+              Key presence is not a connectivity test. The closed-world replay works without API
+              credentials.
+            </p>
           </section>
           <p className="substrate-pass-coordinate">
             <Plus size={12} aria-hidden="true" /> NMM / NEMOTRON / SECOND THOUGHT

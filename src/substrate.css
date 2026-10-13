@@ -1410,3 +1410,96 @@
     border: 1px solid ButtonText;
   }
 }
+
+/* Interactive architecture exploration: selection changes content, examples link to real trials. */
+.substrate-runtime-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 22px;
+}
+.substrate-runtime-tab {
+  min-height: 46px;
+  padding: 9px 10px;
+  text-align: left;
+  border: 1px solid var(--substrate-border-strong);
+  border-radius: 6px;
+  color: var(--substrate-soft);
+  background: rgb(247 249 250 / 2%);
+  font-size: 12px;
+  transition:
+    color 160ms,
+    background 160ms,
+    border-color 160ms;
+}
+.substrate-runtime-tab span {
+  padding-right: 7px;
+  color: var(--substrate-muted);
+  font-family: var(--substrate-mono);
+  font-size: 9px;
+}
+.substrate-runtime-tab:hover,
+.substrate-runtime-tab.is-selected {
+  color: var(--substrate-text);
+  border-color: var(--substrate-violet);
+  background: rgb(175 80 255 / 12%);
+}
+.substrate-runtime-tab.is-selected span {
+  color: var(--substrate-lavender);
+}
+.substrate-runtime-inspect {
+  min-height: 185px;
+  margin-top: 10px;
+  padding: 18px 17px 17px;
+  border: 1px solid var(--substrate-border);
+  background: rgb(12 11 18 / 40%);
+  border-radius: 6px;
+}
+.substrate-runtime-inspect h3 {
+  margin: 6px 0 0;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+.substrate-runtime-inspect p {
+  margin-top: 8px;
+  color: var(--substrate-soft);
+  font-size: 11px;
+  line-height: 1.65;
+}
+.substrate-runtime-example,
+.substrate-pass-test-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  color: var(--substrate-lavender);
+  font-size: 11px;
+  text-decoration: none;
+}
+.substrate-runtime-example {
+  margin-top: 10px;
+}
+.substrate-runtime-example:hover,
+.substrate-pass-test-link:hover {
+  color: var(--substrate-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.substrate-pass-test-link {
+  flex-shrink: 0;
+}
+@media (max-width: 380px) {
+  .substrate-runtime-tab {
+    font-size: 10px;
+  }
+  .substrate-runtime-inspect {
+    padding: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .substrate-runtime-tab {
+    transition: none;
+  }
+}
