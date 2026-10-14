@@ -43,3 +43,24 @@ repeat that action in the same browser, viewport, and build. Record the commit,
 uncommitted changes, browser version, action, and whether the flash repeats before
 assigning a cause. A clean recording take alone is not evidence that an application
 defect was fixed.
+
+## Follow-up on the integrated build — 2026-10-13
+
+The integrated application at commit `477a5c6` was checked again in cloud
+Chromium 154.0.8037.57 at 1440 × 950. Normal motion retained visible content in
+156 samples; reduced motion retained visible content in 176 samples. All 332
+samples after first paint retained a heading and nonempty main. Both sessions
+returned HTTP 200, reported no page errors or hot updates, and had one document
+load each. The current source includes the Windows audit changes.
+
+This is another failure to reproduce the reported Windows flash, not evidence
+that its cause was fixed. The original recording and exact preceding action
+remain unavailable for a matched reproduction. Generated screenshots and
+`results.json` remain in ignored `artifacts/flash-investigation`.
+
+The separate silent browser rehearsal retained its completed closing judgment
+and measured 170.002 seconds in the browser, with no errors, hot updates, or
+extra document loads. Its assembled 170.080-second MP4 had zero intervals
+meeting `blackdetect=d=0.08:pix_th=0.04:pic_th=0.99`. This rendered-frame check
+strengthens the evidence for the cloud rehearsal; it still does not clear the
+original Windows recording or establish the cause of its 00:05 flash.

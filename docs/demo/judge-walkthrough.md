@@ -1,6 +1,6 @@
 # Second Thought: 170-second judge walkthrough
 
-This is a planned recording path, not a measured finished video. Target the final frame at **2:50 (170 seconds)**. That leaves ten seconds beneath the 180-second limit for small delivery or navigation delays. Finish the closing line by 2:55 at the latest; do not use that margin to add content.
+This is the narration plan for a recording path. A silent cloud-browser rehearsal measured **170.002 seconds**; a narrated final submission has not been recorded. Target the final frame at **2:50 (170 seconds)**. That leaves ten seconds beneath the 180-second limit for small delivery or navigation delays. Finish the closing line by 2:55 at the latest; do not use that margin to add content.
 
 The path demonstrates one mechanism: **first read → evidence problem → regulatory action → final judgment**. It uses Berth 7 once, a short Evaluation Lab view, and separate provider connection checks. It does not tour the recorder, dual reasoning panes, CCG instrument, intervention rail, or full model catalog.
 
@@ -12,7 +12,7 @@ The path demonstrates one mechanism: **first read → evidence problem → regul
 - Start the application and keep its server terminal running. Configure credentials on the server, never on camera. Key presence alone does not prove an authenticated provider request.
 - Prepare three tabs on the same running build: `/` with Berth 7 selected and not started; `/lab`, positioned so the three summary metrics and their qualification are visible; and `/substrate#connections`, showing both connection cards. Keep the Bench tab on its case card, with Decision Shift and replay progress visible. Preloading removes loading and catalog scrolling from the recorded path.
 - Confirm playback speed is **1×**. The source schedules a nominal 15-second replay. One integrated Chromium check measured 15.148 seconds from the click to the completed Decision Shift; this is not a Windows or finished-video measurement. A background tab or slow device can alter visible timing. Keep the Bench tab foregrounded during playback.
-- Follow [the flash reproduction notes](flash-investigation.md) with the intended browser, viewport, build, and navigation sequence before recording. The earlier Chromium investigation did not reproduce an empty page in 330 content samples across both motion settings; that does not clear a compositor or recording issue, nor establish behavior after this merge. Record the new result. A warmed recording route is useful for staging; it does not establish that a cold-load defect is fixed.
+- Follow [the flash reproduction notes](flash-investigation.md) with the intended browser, viewport, build, and navigation sequence before recording. The current integrated-build Chromium check did not reproduce an empty page in 332 content samples across both motion settings. That does not clear the original Windows compositor or recording issue. Record the result for the intended recording environment. A warmed recording route is useful for staging; it does not establish that a cold-load defect is fixed.
 - Start a visible off-camera stopwatch with the recording. Speak at a practiced, comfortable pace. Run the complete path once and record its actual duration below before the final take.
 
 ## Run of show
@@ -57,12 +57,34 @@ The eight slots total **170 seconds**, including a 40-second provider window. Na
 - If behind at 2:30, use this eight-second ending: “First read. Evidence problem. Behavior changes. Final judgment. That is the Second Thought decision shift.” Finish by 2:55.
 - Accept a final take only when its measured duration is under 180 seconds, the mechanism is visible during the first minute, and every claim matches the displayed build and results. A provider failure can be shown truthfully; it cannot be relabeled as successful connectivity. Do not crop the proof caveat out of the Lab frame.
 
-| Rehearsal evidence                          | Recorded value   |
-| ------------------------------------------- | ---------------- |
-| Branch / commit / uncommitted build changes | Not recorded yet |
-| Browser / viewport / URL                    | Not recorded yet |
-| Blank flash reproduction result             | Not recorded yet |
-| Actual replay elapsed time                  | Not measured yet |
-| Lightning / Tavily outcome                  | Not recorded yet |
-| Complete take duration                      | Not measured yet |
-| Final video artifact                        | Not produced yet |
+| Rehearsal evidence                | Recorded value, 2026-10-13 (America/New_York)                                                                                             |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Branch / commit / build changes   | `secondthought/demo-finish` / `477a5c6`; application source unchanged; new recording helpers and documentation uncommitted during capture |
+| Browser / viewport / URL          | Cloud Chromium 154.0.8037.57 / 1440 × 1000 / local port 8080                                                                              |
+| Blank flash reproduction          | Startup/navigation diagnostic: 332 samples without empty content; original Windows flash remains unconfirmed                              |
+| Actual replay elapsed time        | 15.454 seconds; completed judgment visible at take time 45.469 seconds                                                                    |
+| Lab / connection / closing frames | 88.716 / 110.678 / 150.311 seconds                                                                                                        |
+| Lightning / Tavily outcome        | Both returned their actual missing-key responses; no provider request or successful connectivity claimed                                  |
+| Complete browser path duration    | **170.002 seconds**, measured with a monotonic clock                                                                                      |
+| Reload / error checks             | Three initial document loads, one per prepared tab; no further loads, hot updates, or page errors                                         |
+| Video artifact                    | Silent browser rehearsal, **170.080-second MP4**, assembled at the actual tab switches; narrated final submission not produced            |
+
+## Reproduce the measured browser rehearsal
+
+Keep the server running and avoid file edits during recording. The recorder uses three prepared tabs and a single Berth replay. It retains the completed Bench tab for the closing frame instead of navigating away and remounting it. It captures real application pages and server responses, without mocked provider success.
+
+```powershell
+npx playwright install ffmpeg
+node scripts/judge-rehearsal.mjs
+node scripts/judge-rehearsal-video.mjs
+```
+
+The final command requires `ffmpeg` and `ffprobe` on PATH. On Windows, the recorder uses installed Edge; `JUDGE_BROWSER_EXECUTABLE` can select another browser. The cloud run used its local Playwright binary cache with system Chromium. These optional recording dependencies do not change the application or package lockfile.
+
+By default, only checks with missing credentials are exercised. To deliberately make configured provider requests, append `--live-probes` to the recorder command. It records actual failures or pending states and never substitutes a success receipt. Configure keys securely on the server before a live take.
+
+Generated output is ignored under `artifacts/judge-rehearsal`: `timing.json`, stage screenshots, three raw tab videos, assembled `judge-rehearsal.mp4`, and `video-check.json`. Assembly removes preflight and inactive-tab footage using the actual checkpoint times; it does not accelerate playback or replace application content. The stream offsets use page-creation timing and can differ from UI checkpoints by a few video frames. Use the original screen recording for a submission that requires an unedited take.
+
+The assembled MP4 measured **170.080 seconds** and contained **zero** sustained-black intervals under the rendered-frame check. The check flags intervals of at least 0.08 seconds with at least 99% near-black pixels. A negative result is a rendered-frame check for this rehearsal, not a diagnosis of the original Windows flash. The actual narrated final take must still be measured under 180 seconds.
+
+An earlier full rehearsal failed its closing check because Bench showed 0% after returning to its tab. A short tab-switch check retained 100%, and the complete retry without file edits retained 100% with no reloads. The initial reset's cause was not established; it is not marked fixed. The recorder rejects an unexpected closing state rather than replaying again or fabricating a completed frame.
