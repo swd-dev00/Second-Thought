@@ -540,15 +540,11 @@ export function SubstrateView() {
               <ProbeResult id="tavily-result" pending={busy === "tavily"} ok={tavily?.ok}>
                 {tavily ? (
                   tavily.ok ? (
-                    tavily.results.length ? (
-                      <ul className="substrate-search-results">
-                        {tavily.results.map((item, index) => (
-                          <li key={item.url + index}>
-                            <span>{item.title}</span>
-                            <span className="substrate-result-meta">{item.url}</span>
-                          </li>
-                        ))}
-                      </ul>
+                    tavily.resultCount > 0 ? (
+                      <p>
+                        Tavily connection verified. The test search returned {tavily.resultCount}{" "}
+                        {tavily.resultCount === 1 ? "result" : "results"}.
+                      </p>
                     ) : (
                       <p>The connection is ready. No results were returned for this test query.</p>
                     )

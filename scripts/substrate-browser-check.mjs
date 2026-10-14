@@ -193,7 +193,7 @@ try {
             ? {
                 ok: true,
                 model: "test-lightning",
-                text: "calibration holds",
+                text: "Connection verified. Lightning returned a successful response.",
                 usage: { prompt_tokens: 5, completion_tokens: 2 },
               }
             : {
@@ -208,10 +208,7 @@ try {
         headers: { "x-tss-serialized": "true" },
         body: response({
           ok: true,
-          results:
-            tavilyMode === "results"
-              ? [{ title: "Test evidence", url: "https://example.com/evidence" }]
-              : [],
+          resultCount: tavilyMode === "results" ? 1 : 0,
         }),
       });
     } else await route.continue();
@@ -244,7 +241,10 @@ try {
   await page.locator("#lightning-result").getByText("Waiting for response").waitFor();
   gate.resolve();
   gate = null;
-  await page.locator("#lightning-result").getByText("calibration holds", { exact: true }).waitFor();
+  await page
+    .locator("#lightning-result")
+    .getByText("Connection verified. Lightning returned a successful response.", { exact: true })
+    .waitFor();
   await page.locator("#lightning-result").getByText("5 input / 2 output tokens").waitFor();
   assert.equal(lightningCalls, 1);
   passed(
@@ -277,17 +277,23 @@ try {
   assert.equal(await lightningButton.isEnabled(), true);
   lightningMode = "success";
   await lightningButton.click();
-  await page.locator("#lightning-result").getByText("calibration holds", { exact: true }).waitFor();
+  await page
+    .locator("#lightning-result")
+    .getByText("Connection verified. Lightning returned a successful response.", { exact: true })
+    .waitFor();
   passed("Mocked inference and transport failures with retry recovery");
   await tavilyButton.click();
-  await page.locator("#tavily-result").getByText("Test evidence", { exact: true }).waitFor();
+  await page
+    .locator("#tavily-result")
+    .getByText("Tavily connection verified. The test search returned 1 result.", { exact: true })
+    .waitFor();
   tavilyMode = "empty";
   await tavilyButton.click();
   await page
     .locator("#tavily-result")
     .getByText("No results were returned", { exact: false })
     .waitFor();
-  passed("Mocked search success and empty result");
+  passed("Mocked search connection receipt and truthful empty result");
   statusUnavailable = true;
   await page.reload({ waitUntil: "networkidle" });
   await page.getByText("Status unavailable", { exact: true }).first().waitFor();
@@ -303,17 +309,19 @@ try {
   await page.getByRole("link", { name: "Evaluation lab", exact: true }).click();
   await page
     .getByRole("heading", {
-      name: "Model size is not a cognitive policy. This battery measures the difference.",
+      name: "Intelligence deserves an audit.",
     })
     .waitFor();
   gate.resolve();
   gate = null;
-  assert.equal(await page.locator(".substrate-shell").count(), 0);
+  assert.equal(await page.locator(".substrate-page").count(), 0);
+  assert.equal(await page.locator(".lab-experience").count(), 1);
   assert.equal(await page.locator("#lightning-result").count(), 0);
   await page.getByRole("link", { name: "Bench", exact: true }).click();
-  await page.getByRole("heading", { name: "Second Thought is a cognitive runtime." }).waitFor();
-  assert.equal(await page.locator(".substrate-shell").count(), 0);
-  passed("In-flight navigation and original sibling route appearance");
+  await page.getByRole("heading", { name: "Reasoning is not the verdict." }).waitFor();
+  assert.equal(await page.locator(".substrate-page").count(), 0);
+  assert.equal(await page.locator(".bench-experience").count(), 1);
+  passed("In-flight navigation and current sibling route appearance");
   assert.deepEqual(pageErrors, []);
   const result = {
     base,

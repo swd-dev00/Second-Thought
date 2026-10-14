@@ -84,12 +84,12 @@ export const probeTavily = createServerFn({ method: "POST" }).handler(async () =
     if (!response.ok) {
       return { ok: false as const, reason: `Tavily ${response.status}: ${text.slice(0, 280)}` };
     }
-    const json = JSON.parse(text) as { results?: { title?: string; url?: string }[] };
-    const results = (json.results ?? []).slice(0, 2).map((item) => ({
-      title: item.title ?? "Untitled",
-      url: item.url ?? "",
-    }));
-    return { ok: true as const, results };
+    const json = JSON.parse(text) as { results?: unknown[] };
+    if (json.results !== undefined && !Array.isArray(json.results)) {
+      return { ok: false as const, reason: "Tavily returned an invalid search response." };
+    }
+    // A health check proves connectivity without sending search content to the UI.
+    return { ok: true as const, resultCount: json.results?.length ?? 0 };
   } catch (error) {
     return { ok: false as const, reason: error instanceof Error ? error.message : "Tavily request failed." };
   }
